@@ -1,0 +1,832 @@
+<!DOCTYPE html>	
+<html>
+	<head>
+		<title>Jotihunt 2015 - Rhedense Pioniers - Map</title>
+			
+		<!-- meta data -->
+		<META NAME="Author" 		CONTENT= "Micky - Redsheep.nl - Rheden">
+		<META NAME="Description" 	CONTENT= "De Jotihunt 2016 site van de RhedensePioniers">
+		<META NAME="KeyWords" 		CONTENT= "www.area348.nl, jotihunt, 2016, rhedense pioniers, scouting, vossen, jacht, vossen jacht, gelderland, Rheden">
+		<meta name="robots" 		content= "index, follow">
+
+		<!-- links naar stylesheet / favicon -->
+		<!-- <link rel="shortcut icon" 	href="http://jotihunt.net/favicon.ico" type="image/x-icon"> -->
+		<!-- <link rel="stylesheet" 	type="text/css" href="css/header.css" /> -->
+		<link rel="stylesheet" 	type="text/css" href="css/map.css" />
+		
+		<!-- <script type="text/javascript" src="java/dropdown_menu.js"></script> --> 
+		<!-- 
+			<script type="text/javascript" src="java/jquery-1.8.2.min.js"></script>
+		-->
+		<script src="sha1.js"></script>
+
+		<script
+			src="https://maps.googleapis.com/maps/api/js?key=AIzaSyA0I_W0xEcD625iCQkhpCo9oacP3P1e0iA">
+		</script>
+
+		<script
+			src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.2/jquery.min.js">
+		</script>
+
+	</head>
+	<body onload="initialize()">
+		<script type="text/javascript">
+			
+			function krijgSleutel()
+			{
+				var gebruiker = document.getElementById('gebruikersnaam').value  ;
+			  	var ww = hex_sha1 ( document.getElementById( 'wachtwoord' ).value ) ;
+			  	$.ajax({
+			  		type:'POST',
+				     url:"proxy.php", 
+				     data: {gebruiker: gebruiker, ww: ww, url: "http://jotihunt-API_V2.area348.nl/login"},
+				     success:function(data){
+				     	data = JSON.parse(data) ;
+				     	try{
+				     		var sleutel = data.SLEUTEL ;
+				        	api.setSleutel(sleutel) ;
+				        	document.getElementById('respond').style.display = 'none' ;
+			  				document.getElementById('map_canvas').style.display = 'block' ;
+			  				google.maps.event.trigger(map, 'resize');
+				     	}catch(err){
+				     		alert('onbekende gebruikersnaam en/of verkeerd wachtwoord ingevoerd.') ;
+				     	}
+				     },
+				     error:function(){
+				         alert("login Error");
+				     },
+				     done:function(){
+			  			
+			  		}
+				});
+			  	return false;
+			}
+		</script>
+
+		<div id="map_canvas" style="width: 100%; height: 100%;"></div>
+		<div id="respond" style="display:none;">
+				<div id="login_div">
+					<label for='login'><font size="+1"><b>Login</b></font></label><br><br>
+						<p>Waarschuwing: Als je hier inlogd moet je opnieuw inloggen in de app
+						<p>
+						<label for='gebruikersnaam'>Gebruikersnaam</label><input class="textfield" type="text" id="gebruikersnaam" /><br>
+						<label for='wachtwoord'>Wachtwoord</label><input class="textfield" type="password" id="wachtwoord" /><br>
+						<font size="-3"><a href="http://jotihunt2016.area348.nl/user_forget_password.php">Wachtwoord vergeten?</a></font><br>
+						<button onclick="krijgSleutel()" value="Log in">Log In</button>
+					</form> 
+					<!-- einde inlog formulier -->
+				</div>
+			</div>
+		<script>
+			var vossen ; //debug
+			class ApiCaller{
+				constructor(){
+					if (this.queue == null){
+							this.queue = [] ;
+						}
+					this.sleutel  =  "geen_sleutel_ingevoerd" ;
+					this.loggedin = false ;
+					
+				}
+				
+				login(){
+					document.getElementById("respond").style.display = 'block' ;
+			  		document.getElementById('map_canvas').style.display = 'none' ;
+				}
+
+				logout(){
+					this.loggedin = false ;
+					this.sleutel  =  "geen_sleutel_ingevoerd" ;
+					document.getElementById("respond").style.display = 'block' ;
+			  		document.getElementById('map_canvas').style.display = 'none' ;
+				}
+
+				setSleutel (sleutel){
+					this.sleutel = sleutel  ;
+					document.cookie = "sleutel=" +  sleutel ;
+					this.loggedin = true ;
+					for (var i = 0; i< this.queue.length; i++){
+						var el = this.queue[i] ;
+						el.method(el.url,el.onSuccses) ;
+					}
+				}
+
+				add_get_request(url, onSuccses){
+					if (this.loggedin){
+						this.get_request(url,onSuccses) ;
+					}else{
+						if (this.queue == null){
+							this.queue = [] ;
+						}
+						if 	(this.queue.find(function(r){return r.url == url}) == undefined){		
+							this.queue.push({
+								method: this.get_request,
+								url: url,
+								onSuccses: onSuccses
+							}) ;
+						}
+					}
+				}
+
+				get_request(url, onSucces){
+					url = url.replace("{sleutel}", api.sleutel) ;
+					$.ajax({
+						     url: "proxy.php",
+						     data: {url : url},
+						     type: "GET" ,
+						     success:function(json){
+						     	try{
+						        json=JSON.parse(json) ;
+						        onSucces(json) ;
+						    	}catch(err){
+						    		if (json.search("ERROR 110 : GEEN GELDIGE SLEUTEL IN GEVOERD") != -1){
+						    			if (api.loggedin){
+						    				alert("key error:\n Er is ingelogd op een ander apparaat met dit account.\n je wordt nu uitgelogd.") ;
+						    			}
+						    			api.logout() ;
+						    		}
+						    		console.log(json);
+						    		console.log(this.url);
+						    		console.log(err);
+						    		throw json + '; ' + this.url ;
+						    	}
+						     },
+						     error:function(jqXHR, textStatus, errorThrown){
+						         alert("Error: fout bij het ophalen data.\n" + textStatus + '\n' + errorThrown);
+						   }
+						});
+				}
+
+				getGroepen(onSucces){
+					var url = "http://jotihunt-API_V2.area348.nl/sc/{sleutel}/" + 'all' ;
+					this.add_get_request(url, onSucces) ;
+				}
+
+				getLastVos(team, onSucces){
+					var url = "http://jotihunt-API_V2.area348.nl/vos/{sleutel}/" + team + '/last' ;
+				  	this.add_get_request(url, onSucces) ;
+				}
+
+				getVossen(team, onSucces){
+					var url = "http://jotihunt-API_V2.area348.nl/vos/{sleutel}/" + team + '/all' ;
+				  	this.add_get_request(url, onSucces) ;
+				}
+				
+				getHunter(hunter, onSucces){
+					var onSucces2 = function(data){
+						var tail = data[hunter]  ;
+						tail = sortById(tail) ;
+						if (tail == undefined){
+							throw hunter + ';\n ' + tail + '\n' + data ;
+						}else{
+							onSucces(tail) ;
+						}
+					}
+
+					var url = "http://jotihunt-API_V2.area348.nl/hunter/{sleutel}/naam/tail/" + hunter ;
+					this.add_get_request(url, onSucces2) ;
+				}
+
+				getHunterNamen(onSucces){
+					var onSucces2 = function(data){
+						var data2 = [] ;
+						for (var i = 0; i < data.length; i++){
+							data2.push(data[i].hunter) ;
+						}
+						onSucces(data2) ;
+						}
+						var url = "http://jotihunt-API_V2.area348.nl/hunter/{sleutel}/hunter_namen" ;
+						this.add_get_request(url, onSucces2) ;
+				}
+
+				getHunterLast(hunter, onSucces){
+					var onSucces2 = function(data){
+						if (data != undefined){
+							data = data.reverse() ;
+							onSucces(data[0]) ;
+						}else{
+							var err = new Error('verkeerde input') ;
+							throw err;
+						}
+					}
+					this.getHunter(hunter, onSucces2) ;
+				}
+				getFoto(onSucces){
+					
+					var url = "http://jotihunt-API_V2.area348.nl/foto/{sleutel}/all" ;
+					this.add_get_request(url, onSucces) ;
+				}
+
+				getFotoById(id, onSucces){
+					var onSucces2 = function(data){
+						for (var i = 0; i < data.length; i ++){
+							var foto = data[i] ;
+							if (foto.id == id){
+								onSucces(foto) ;
+								break ;
+							}
+						}
+					}
+					this.getFoto(onSucces2) ;
+				}
+			}
+
+			class Vos {
+				constructor(map,team, color, hunt_icon, spot_icon, hint_icon, last_hint_icon, groep_icon){
+					this.map = map ;
+					this.color = color ;
+					this.hunt_icon = hunt_icon ;
+					this.spot_icon = spot_icon ;
+					this.hint_icon = hint_icon ;
+					this.groep_icon  = groep_icon ;
+					this.last_hint_icon = last_hint_icon ;
+					this.markers =  [] ;
+					this.team = team ;
+					this.circle  = new google.maps.Circle({
+									  map: map,
+									  radius: 0,    // afstand in metres
+									  strokeColor: '#FF6600',
+									  strokeOpacity: 0.2,
+									  strokeWeight: 0.2,
+									  fillColor: '#FF6600'
+								});
+					var polylineInfo = {
+						path: [],
+						strokeColor: this.color,
+						strokeOpacity: .6,
+						strokeWeight: 2
+					}
+					this.speed = 6.0; // in km/u
+					this.last_hint = {team:'q', id: '42'} ; //fake data
+					this.polyline = new google.maps.Polyline(polylineInfo) ;
+					this.polyline.setMap(map) ;
+				}
+
+				addGroep(groep){
+					if (groep.team != this.team){
+						return;
+					}else{
+						var infowindowdata = 
+						'<div id="infowindow">'+
+						groep.naam +
+						'<br>'+
+						groep.latitude + ', ' + groep.longitude +
+						'<br>'+
+						groep.adres+
+						'</div>' ;
+						var infowindow = new google.maps.InfoWindow({
+							content: infowindowdata
+						});
+						
+						var marker = new google.maps.Marker({
+							position: new google.maps.LatLng(groep.latitude,groep.longitude),	
+							map: map,				
+							title: groep.naam + '#'+ groep.team+ groep.id,	
+							icon: new google.maps.MarkerImage(this.groep_icon, null, null, new google.maps.Point(25,18))		
+						});
+						
+						var circle  = new google.maps.Circle({
+									  map: map,
+									  radius: 500,    // afstand in metres
+									  strokeColor: "#000000",
+									  strokeOpacity: 0.2,
+									  strokeWeight: 0.2,
+									  fillColor: this.color
+								});
+						circle.bindTo('center', marker, 'position') ;
+						google.maps.event.addListener(marker, 'click', function() {
+							infowindow.open(map,marker);
+							
+						});
+					}
+
+				}
+
+				updateRadius(){
+					var marker = null ;
+					for (var i = 0; i < this.markers.length; i++){
+						if (this.markers[i].getIcon().url == this.last_hint_icon){
+							marker = this.markers[i];
+							break;
+						}
+					}
+					if (marker == null){
+						return ;
+					}else{
+						var title = marker.getTitle().split(';') ;
+						if (title.length == 0){
+							alert('error 01. \n de cirkels zullen niet groeien \n' + marker.getTitle())
+							return ;
+						}
+						var datetime_str = title[title.length-1] ;
+						var datetime = Date.parse(datetime_str + " GMT+0100") ;
+						var _speed = (this.speed * 1000.0) / 3600.0; // snelheid in m/s
+						var dt = (Date.now().valueOf() - datetime.valueOf()) /1000 ;
+						if (dt>= 3 * 60 * 60 || dt < 0){ // 3 uur.
+							dt = 0 ;
+						}
+						var radius = dt * _speed ;
+						this.circle.setRadius(radius) ;
+						return ;
+					}
+				}
+
+				addLoc(response){
+					if (response.team == this.last_hint.team && response.id == this.last_hint.id){
+						return ;
+					} else {
+						this.last_hint = response ;
+					}
+					var infowindowdata = 
+						'<div id="infowindow">' +
+						response.team +
+						'<br>'+
+						response.datetime +
+						'<br>' +
+						response.latitude + ', ' + response.longitude +
+						'<br>'+
+						response.opmerking +
+						'<br>'+
+						response.extra +
+						'</div>' ;
+					var infowindow = new google.maps.InfoWindow({
+						content: infowindowdata
+					}) ;
+					var pos =  new google.maps.LatLng(response.latitude, response.longitude) ;
+					var icon ;
+					if (response.icon == "3"){ // icon is een spot
+						icon = this.spot_icon ;
+					} else if (response.icon == "4"){ // icon is een hunt
+						icon = this.hunt_icon ;
+					} else { // icon is een hint
+						icon = this.last_hint_icon ;
+						for (var i = 0; i < this.markers.length; i++){ // er is maar een last hint.
+							if (this.markers[i].getIcon().url == this.last_hint_icon){
+								this.markers[i].setIcon(new google.maps.MarkerImage(this.hint_icon, null, null, new google.maps.Point(16, 16)))
+							}
+						}
+					}
+					var icon_image =  new google.maps.MarkerImage(icon, null, null, new google.maps.Point(16, 16)) ;
+					var marker = new google.maps.Marker({
+						position: pos,
+						map: this.map,
+						title: response.team + "#"  + response.id+ ';' + response.datetime,
+						icon: icon_image
+					}) ;
+					if (icon == this.last_hint_icon){
+						this.circle.bindTo('center', marker, 'position') ;	
+					}
+					google.maps.event.addListener(marker, 'click', function() {
+									infowindow.open(map,marker);
+								});	
+
+					this.markers.push(marker) ;
+					var path = this.polyline.getPath() ;
+					path.push(pos) ;
+
+					this.updateRadius() ;
+				}
+			}
+			class Foto{
+				constructor(map, iconPath, iconPathKlaar, response){
+					this.map = map ;
+					this.icon_te_doen = iconPath ;
+					this.icon_klaar = iconPathKlaar ;
+					this.id = response.id;
+					var InfoWindowData = 
+						'<div id="infowindow">'+
+						response.foto_nr+
+						'<br>'+
+						 response.latitude + ', '+ response.longitude +
+						'<br>'+
+						response.info+
+						'<br>'+
+						response.extra+
+						'</div>'
+						;
+					var infowindow = new google.maps.InfoWindow({
+						content: InfoWindowData
+					});
+					this.marker = new google.maps.Marker({
+						position: new google.maps.LatLng(response.latitude, response.longitude),	
+						map: map,				
+						title: response.foto_nr,	
+						icon: new google.maps.MarkerImage(this.icon_te_doen,null,null,new google.maps.Point(10,10))		
+					});
+					this.done = false;
+				}
+				setDone(){
+					this.done = true ;
+					this.marker.setIcon(new google.maps.MarkerImage(this.icon_klaar, null,null,new google.maps.Point(10,10))) ;
+				}
+			}
+			class FotoSet{
+				constructor(map, iconPath, iconPathKlaar){
+					this.map = map ;
+					this.icon_te_doen = iconPath ;
+					this.icon_klaar = iconPathKlaar ;
+					this.notDone = [] ;
+					this.done = [] ;
+
+				}
+
+				addPhoto(response){
+					var foto = new Foto(this.map, this.icon_te_doen, this.icon_klaar, response) ;
+					this.notDone.push(foto) ;
+				}
+
+				getNotDonIds(){
+					return this.notDone.map(function(e){return e.id}) ;
+				}
+
+				fotoDone(id){
+					for (var i = 0; i < this.notDone.length ; i++){
+						var foto = this.notDone[i] ;
+						if (foto.id == id){
+							foto.setDone() ;
+							var newDone = [] ;
+							for (var j = 0; j < this.notDone.length; j++){
+								if (this.notDone[j].is != foto.id){
+									newDone.push(foto) ;
+								}
+							}
+							this.done = newDone;
+						}
+					}
+				}
+			}
+
+			class Hunter{
+				constructor(map, naam, iconPath){
+					this.map = map ;
+					this.iconPath = iconPath; 
+					var polylineInfo = {
+						path: [],
+						strokeColor: this.color,
+						strokeOpacity: .6,
+						strokeWeight: 2
+					}
+					this.polyline = new google.maps.Polyline(polylineInfo) ;
+					this.polyline.setMap(map) ;
+					this.infoWindowData = '<div id="infowindow">'+
+							naam +
+							'<br>'+
+							'{datetime}' +
+							'</div>' ;
+					this.infoWindow = new google.maps.InfoWindow({
+							content: this.infoWindowData
+						});
+
+					this.marker = new google.maps.Marker({
+						position: new google.maps.LatLng(0,0),
+						map: this.map,
+						title: naam
+					}) ;
+					this.marker.setVisible(false) ;
+					google.maps.event.addListener(this.marker, 'click', function(e) {
+							var hunter = hunters.getHunterFromLatLng(e.latLng) ;
+							hunter.infoWindow.open(map, hunter.marker);
+						});
+					this.last = {hunter: "sjlkasjdlk", id: "420"} ; // fake data
+					this.pointsExpires = [] ;
+
+				}
+				setNaam(naam){
+					this.naam = naam;
+					this.infoWindowData = '<div id="infowindow">'+
+							naam +
+							'<br>'+
+							'{datetime}' +
+							'</div>' ;
+				}
+				removeFirstLoc(){
+					this.polyline.getPath().removeAt(0) ;
+					this.pointsExpires.splice(0,1);
+					if (this.pointsExpires.length == 0){
+						this.marker.setVisible(false) ;
+						hunters.notUsedAnymore(this.naam) ;
+					}
+				}
+				
+				checkPath(){
+					while(true){
+						if (this.polyline.getPath().length == 0){
+							return ;
+						}
+						if (Date.now() < this.pointsExpires[0]){
+							return;
+						}
+						this.removeFirstLoc() ;
+					}
+				}
+
+				addLoc(response){
+					if (response.hunter != this.naam && response.id != this.last.id){
+						this.last = response ;
+						var pos =  new google.maps.LatLng(response.latitude, response.longitude) ;
+						var expires = Date.parse(response.datetime + " GMT+0100").valueOf() + 1*60*60*1000 ;
+						this.polyline.getPath().push(pos) ;
+						this.marker.setVisible(true) ;
+						this.marker.setPosition(pos) ;
+						this.infoWindow.setContent(this.infoWindowData.replace("{datetime}",response.datetime)) ;
+						if (response.icon == "999"){
+							response.icon = "0" ;
+						}
+						this.marker.setIcon(new google.maps.MarkerImage(this.iconPath.replace("{id}", response.icon), null, null, new google.maps.Point(16, 16)));
+						this.pointsExpires.push(expires) ;
+					}
+				}
+			}
+
+			class HuntersSet{
+				constructor(map, hunter_icon_path){
+					this.hunterNamen = new Set([]);
+					this.inUse = {} ;
+					this.notInUse = [] ;
+					this.hunter_icon_path = hunter_icon_path ;
+				}
+
+				notUsedAnymore(naam){
+					if (this.inUse[naam] != undefined){
+						this.notInUse.push(this.inUse[naam]) ;
+						this.inUse[naam] = undefined ;
+					}
+				}
+
+				addHunter(naam){
+					if (!this.hunterNamen.has(naam)){
+						var x = this.notInUse.pop() ;
+						if (x == undefined){
+							x = new Hunter(map, naam, this.hunter_icon_path) ;
+						}else{
+							x.setNaam(naam) ;
+						}
+						this.hunterNamen.add(naam) ;
+						this.inUse[naam] = x ;
+					}
+				}
+
+				getHunterFromLatLng(latlng){
+					for (let naam of this.hunterNamen){
+						var hunter = this.inUse[naam] ;
+						var hposition = hunter.marker.getPosition() ;
+						if (hposition.lat() ==latlng.lat() && hposition.lng() ==latlng.lng()){
+							return hunter ;
+						}
+					}
+				}
+
+				contains(naam){
+					return this.hunterNamen.has(naam) ;
+				}
+
+				addLoc(naam, response){
+					if (!this.hunterNamen.has(naam)){
+						this.addHunter(naam) ;
+					}
+					var hunter = this.inUse[naam] ;
+					hunter.addLoc(response) ;
+				}
+				checkPaths(){
+					for (let naam of this.hunterNamen){
+						var hunter = this.inUse[naam] ;
+						hunter.checkPath() ;
+					}
+				}
+				getHunter(naam){
+					if (this.hunterNamen.has(naam)){
+						return this.inUse[naam] ;
+					} else return undefined ;
+				}
+			}
+
+			var api = new ApiCaller();
+			var map ;
+			var vosA ;
+			var vosB ;
+			var vosC ;
+			var vosD ;
+			var vosE ;
+			var vosF ;
+			var vosX ;
+			var hunters ;
+			var fotos ;
+			var createMap = function createMap(){
+				//-- Locatie om de map te centreren.
+				var latlng = new google.maps.LatLng(52.085820, 6.024548);
+
+				//-- Kaart opbouw.
+				var myOptions = {
+					zoom: 12,
+					center: latlng, //-- data invoer via var latlng
+					mapTypeControl: true,
+				    mapTypeControlOptions: {
+						style: google.maps.MapTypeControlStyle.DEFAULT 
+					},
+					
+					//-- Map controls opties.
+					overviewMapControl: false,
+					panControl: true,
+					rotateControl: true,
+					scaleControl: false,
+					streetViewControl: true,
+					zoomControl: true,
+
+					//-- Standaard kaart type.
+					mapTypeId: google.maps.MapTypeId.ROADMAP
+				};
+
+				var map = new google.maps.Map(document.getElementById("map_canvas"), myOptions);
+			
+				var ctaLayer = new google.maps.KmlLayer({
+					url: 'http://jotihunt2015.area348.nl/jotihunt2015.kml',
+					preserveViewport: true,
+					clickable: 0, // polygon ignores mouse clicks
+
+				});
+				ctaLayer.setMap(map);
+				return map ;
+			}
+
+			function sortById(list){
+				var lowest = -1 ;
+				var last  = -1;
+				var curr_item ;
+				var result = [] ;
+				while(result.length  < list.length){
+					for(var i = 0; i < list.length; i++){
+						var item = list[i];
+						var id = parseInt(item.id) ;
+						if (lowest < 0 && id > last){
+							lowest = id ;
+							curr_item = item ;
+						}else{
+							if (id > last && id < lowest){
+								lowest = id;
+								curr_item = item ;
+							}
+						}
+					}
+					result.push(curr_item) ;
+					curr_item =  undefined;
+					var last = lowest ;
+					var lowest = -1 ;
+				} 
+				return result ;
+			}
+			function initializeVos(vos){
+				var onSucces= function(data){
+					data = sortById(data) ;
+					for (var i = 0; i < data.length; i++){
+						vos.addLoc(data[i]) ;
+					}
+				}
+				api.getVossen(vos.team, onSucces) ;
+			}
+
+			function initializeGroepen(){
+				var vos ;
+				var onSucces = function(json)
+					{
+						for (var i = 0; i <json.length; i++){
+							var groep = json[i] ;
+							groep.team = groep.team.toLowerCase() ;
+							if (groep.team == 'a'){
+								vos = vosA;
+							} else if (groep.team == 'b'){
+								vos = vosB;
+							} else if (groep.team == 'c'){
+								vos = vosC;
+							} else if (groep.team == 'd'){
+								vos = vosD;
+							} else if (groep.team == 'e'){
+								vos = vosE;
+							} else if (groep.team == 'f'){
+								vos = vosF;
+							} else if (groep.team == 'x'){
+								vos = vosX;
+							} else {
+								alert('error onbekend deelgebied: ' + groep.team) ;
+								return ;
+							}
+							vos.addGroep(groep);
+						} 
+					};
+				api.getGroepen(onSucces) ; 
+			}
+			function initializeFotos(){
+				api.getFoto(function(data){
+					for (var i = 0; i < data.length; i++){
+						fotos.addPhoto(data[i]) ;
+					}
+				}) ;
+			}
+			var initialize = function initialize() {
+				map = createMap() ;
+				vosA = new Vos(map, 'a', "#FF0000", "img/map/a/4-32X32.png", "img/map/a/3-32X32.png", "img/map/a/2-32X32.png", "img/map/a/1-32X32.png", "img/map/scouting-nederland-new-50x36-transp.png") ;
+				vosB = new Vos(map, 'b', "#00FF00", "img/map/b/4-32X32.png", "img/map/b/3-32X32.png", "img/map/b/2-32X32.png", "img/map/b/1-32X32.png", "img/map/scouting-nederland-new-50x36-transp.png") ;
+				vosC = new Vos(map, 'c', "#0000FF", "img/map/c/4-32X32.png", "img/map/c/3-32X32.png", "img/map/c/2-32X32.png", "img/map/c/1-32X32.png", "img/map/scouting-nederland-new-50x36-transp.png") ;
+				vosD = new Vos(map, 'd', "#00FFFF", "img/map/d/4-32X32.png", "img/map/d/3-32X32.png", "img/map/d/2-32X32.png", "img/map/d/1-32X32.png", "img/map/scouting-nederland-new-50x36-transp.png") ;
+				vosE = new Vos(map, 'e', "#FF00FF", "img/map/e/4-32X32.png", "img/map/e/3-32X32.png", "img/map/e/2-32X32.png", "img/map/e/1-32X32.png", "img/map/scouting-nederland-new-50x36-transp.png") ;
+				vosF = new Vos(map, 'f', "#FFFF00", "img/map/f/4-32X32.png", "img/map/f/3-32X32.png", "img/map/f/2-32X32.png", "img/map/f/1-32X32.png", "img/map/scouting-nederland-new-50x36-transp.png") ;
+				vosX = new Vos(map, 'x', "#000000", "img/map/x/4-32X32.png", "img/map/x/3-32X32.png", "img/map/x/2-32X32.png", "img/map/x/1-32X32.png", "img/map/scouting-nederland-new-50x36-transp.png") ;
+				hunters = new HuntersSet(map, "img/map/hunter/{id}-32x32.png") ;
+				fotos = new FotoSet(map, "img/map/camera_20x20.png", "img/map/camera_20x20_klaar.png") ;
+				api.login() ;
+				initializeVos(vosA) ;
+				initializeVos(vosB) ;
+				initializeVos(vosC) ;
+				initializeVos(vosD) ;
+				initializeVos(vosE) ;
+				initializeVos(vosF) ;
+				initializeVos(vosX) ;
+				initializeGroepen() ;
+				initializeFotos() ;
+				updateHunters()
+				controller() ;
+			}
+			
+			function updateHunters(){
+				api.getHunterNamen(function(data){
+					for (var i = 0; i < data.length; i++){
+						var naam = data[i] ;
+						if (!hunters.contains(naam)){
+							hunters.addHunter(naam);
+							api.getHunter(naam,function(data2){
+								data2 = sortById(data2) ;
+								for (var i = 0 ; i < data2.length; i++){
+									var loc = data2[i] ;
+									hunters.addLoc(loc.hunter, loc) ;
+								}
+							});
+						}else{
+							api.getHunterLast(naam, function(data){
+								hunters.addLoc(data.hunter, data);
+							}) ;
+						}
+					}
+				}) ;
+				hunters.checkPaths() ;
+			}
+
+			function updateVos(vos, team){
+				api.getLastVos(team, function(data){
+					vos.addLoc(data) ;
+				}) ;
+			}
+			function updateVosA(){
+				updateVos(vosA, 'a') ;
+				vosA.updateRadius() ;
+			}
+			function updateVosB(){
+				updateVos(vosB, 'b') ;
+				vosB.updateRadius() ;
+			}
+			function updateVosC(){
+				updateVos(vosC, 'c') ;
+				vosC.updateRadius() ;
+			}
+			function updateVosD(){
+				updateVos(vosD, 'd') ;
+				vosD.updateRadius() ;
+			}
+			function updateVosE(){
+				updateVos(vosE, 'e') ;
+				vosE.updateRadius() ;
+			}
+			function updateVosF(){
+				updateVos(vosF, 'f') ;
+				vosF.updateRadius() ;
+			}
+			function updateVosX(){
+				updateVos(vosX, 'x') ;
+				vosX.updateRadius() ;
+			}
+			function updateFotos(){
+				var ids_to_update = fotos.getNotDonIds() ;
+				for ( var i = 0; i < ids_to_update.length; i++){
+					var id = ids_to_update[i] ;
+					api.getFotoById(id,function(data){
+						if (data.klaar  == "1"){
+							fotos.fotoDone(data.id) ;
+						}
+					});
+				}
+			}
+			var controller =function controller(){
+				var vosUpdateInterval = 1 * 1000; // 1 sec
+				setInterval(updateVosA, vosUpdateInterval) ;
+				setInterval(updateVosB, vosUpdateInterval) ; 
+				setInterval(updateVosC, vosUpdateInterval) ;
+				setInterval(updateVosD, vosUpdateInterval) ;
+				setInterval(updateVosE, vosUpdateInterval) ;
+				setInterval(updateVosF, vosUpdateInterval) ;
+				setInterval(updateVosX, vosUpdateInterval) ;
+				setInterval(updateHunters, 1 * 1000) ; 
+				setInterval(updateFotos, 1 * 1000) ;
+			}
+		</script>
+		
+			
+	</body>
+</html>
