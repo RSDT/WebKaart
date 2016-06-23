@@ -238,6 +238,10 @@
 					return hunterLocSender.getRunning() ;
   					
   				}) ;
+  				controls.addButton('Centreer Kaart', '#fff', function(div){
+  					map.setCenter(new google.maps.LatLng(52.087656, 5.892773)) ;
+  					map.setZoom(10) ;
+  				}) ;
   				controls.addButton('log uit', '#fff', function(div){
   					api.logout() ;
   				}) ;
@@ -299,6 +303,7 @@
 				controls = new ConctrolCenter(map) ;
 			}
 			function initialize2(){
+				controls.detachLogin() ;
 				initializeGlobals() ;
 				initializeVos(vosA) ;
 				initializeVos(vosB) ;
@@ -311,6 +316,7 @@
 				initializeFotos() ;
 				initializeControls() ;
 				updateHunters() ;
+				controls.hideLogin() ;
 				google.maps.event.trigger(map, "resize");
 			}
 			var initialize = function initialize() {
