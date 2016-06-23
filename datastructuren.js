@@ -806,12 +806,16 @@ class ConctrolCenter{
 			
 
 		this.loginDiv =document.getElementById("respond") ;
-		map.controls[google.maps.ControlPosition.CENTER].push(this.loginDiv);
-		this.loginDiv.style.backgroundColor =  "white" ;
-		this.loginDiv.hidden = true ;
+                map.controls[google.maps.ControlPosition.CENTER].push(this.loginDiv);
+                this.loginDiv.style.backgroundColor =  "white" ;
+                this.loginDiv.hidden = true ;
 
 		
 	}
+	detachLogin(){
+            document.body.appendChild(this.loginDiv) ;
+            
+        }
 	showLogin(){
 		this.loginDiv.hidden = false ;
 	}
