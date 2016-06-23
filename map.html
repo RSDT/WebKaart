@@ -19,7 +19,6 @@
 			<script type="text/javascript" src="java/jquery-1.8.2.min.js"></script>
 		-->
 		<script src="sha1.js"></script>
-
 		<script
 			src="https://maps.googleapis.com/maps/api/js?key=AIzaSyA0I_W0xEcD625iCQkhpCo9oacP3P1e0iA">
 		</script>
@@ -45,10 +44,10 @@
 				     	try{
 				     		var sleutel = data.SLEUTEL ;
 				        	api.setSleutel(sleutel) ;
-				        	document.getElementById('respond').style.display = 'none' ;
-			  				document.getElementById('map_canvas').style.display = 'block' ;
-			  				google.maps.event.trigger(map, 'resize');
-				     	}catch(err){
+				        	api.setGebruiker(gebruiker) ;
+				        	controls.hideLogin() ;
+				        }catch(err){
+
 				     		alert('onbekende gebruikersnaam en/of verkeerd wachtwoord ingevoerd.') ;
 				     	}
 				     },
@@ -64,7 +63,7 @@
 		</script>
 
 		<div id="map_canvas" style="width: 100%; height: 100%;"></div>
-		<div id="respond" style="display:none;">
+		<div id="respond">
 				<div id="login_div">
 					<label for='login'><font size="+1"><b>Login</b></font></label><br><br>
 						<p>Waarschuwing: Als je hier inlogd moet je opnieuw inloggen in de app
@@ -77,530 +76,19 @@
 					<!-- einde inlog formulier -->
 				</div>
 			</div>
+		<script src="datastructuren.js"></script>
 		<script>
+			/**
+			de gedachtegang achter dit script is als volgt.
+			je hebt 1 instantie van ApiCaller.
+			aan elke functie van apicaller moet je een functie meegeven die 1 argument krijgt.
+			in die funtie moet je de data verwerken.
+
+			*/
 			var vossen ; //debug
-			class ApiCaller{
-				constructor(){
-					if (this.queue == null){
-							this.queue = [] ;
-						}
-					this.sleutel  =  "geen_sleutel_ingevoerd" ;
-					this.loggedin = false ;
-					
-				}
-				
-				login(){
-					document.getElementById("respond").style.display = 'block' ;
-			  		document.getElementById('map_canvas').style.display = 'none' ;
-				}
+			
 
-				logout(){
-					this.loggedin = false ;
-					this.sleutel  =  "geen_sleutel_ingevoerd" ;
-					document.getElementById("respond").style.display = 'block' ;
-			  		document.getElementById('map_canvas').style.display = 'none' ;
-				}
-
-				setSleutel (sleutel){
-					this.sleutel = sleutel  ;
-					document.cookie = "sleutel=" +  sleutel ;
-					this.loggedin = true ;
-					for (var i = 0; i< this.queue.length; i++){
-						var el = this.queue[i] ;
-						el.method(el.url,el.onSuccses) ;
-					}
-				}
-
-				add_get_request(url, onSuccses){
-					if (this.loggedin){
-						this.get_request(url,onSuccses) ;
-					}else{
-						if (this.queue == null){
-							this.queue = [] ;
-						}
-						if 	(this.queue.find(function(r){return r.url == url}) == undefined){		
-							this.queue.push({
-								method: this.get_request,
-								url: url,
-								onSuccses: onSuccses
-							}) ;
-						}
-					}
-				}
-
-				get_request(url, onSucces){
-					url = url.replace("{sleutel}", api.sleutel) ;
-					$.ajax({
-						     url: "proxy.php",
-						     data: {url : url},
-						     type: "GET" ,
-						     success:function(json){
-						     	try{
-						        json=JSON.parse(json) ;
-						        onSucces(json) ;
-						    	}catch(err){
-						    		if (json.search("ERROR 110 : GEEN GELDIGE SLEUTEL IN GEVOERD") != -1){
-						    			if (api.loggedin){
-						    				alert("key error:\n Er is ingelogd op een ander apparaat met dit account.\n je wordt nu uitgelogd.") ;
-						    			}
-						    			api.logout() ;
-						    		}
-						    		console.log(json);
-						    		console.log(this.url);
-						    		console.log(err);
-						    		throw json + '; ' + this.url ;
-						    	}
-						     },
-						     error:function(jqXHR, textStatus, errorThrown){
-						         alert("Error: fout bij het ophalen data.\n" + textStatus + '\n' + errorThrown);
-						   }
-						});
-				}
-
-				getGroepen(onSucces){
-					var url = "http://jotihunt-API_V2.area348.nl/sc/{sleutel}/" + 'all' ;
-					this.add_get_request(url, onSucces) ;
-				}
-
-				getLastVos(team, onSucces){
-					var url = "http://jotihunt-API_V2.area348.nl/vos/{sleutel}/" + team + '/last' ;
-				  	this.add_get_request(url, onSucces) ;
-				}
-
-				getVossen(team, onSucces){
-					var url = "http://jotihunt-API_V2.area348.nl/vos/{sleutel}/" + team + '/all' ;
-				  	this.add_get_request(url, onSucces) ;
-				}
-				
-				getHunter(hunter, onSucces){
-					var onSucces2 = function(data){
-						var tail = data[hunter]  ;
-						tail = sortById(tail) ;
-						if (tail == undefined){
-							throw hunter + ';\n ' + tail + '\n' + data ;
-						}else{
-							onSucces(tail) ;
-						}
-					}
-
-					var url = "http://jotihunt-API_V2.area348.nl/hunter/{sleutel}/naam/tail/" + hunter ;
-					this.add_get_request(url, onSucces2) ;
-				}
-
-				getHunterNamen(onSucces){
-					var onSucces2 = function(data){
-						var data2 = [] ;
-						for (var i = 0; i < data.length; i++){
-							data2.push(data[i].hunter) ;
-						}
-						onSucces(data2) ;
-						}
-						var url = "http://jotihunt-API_V2.area348.nl/hunter/{sleutel}/hunter_namen" ;
-						this.add_get_request(url, onSucces2) ;
-				}
-
-				getHunterLast(hunter, onSucces){
-					var onSucces2 = function(data){
-						if (data != undefined){
-							data = data.reverse() ;
-							onSucces(data[0]) ;
-						}else{
-							var err = new Error('verkeerde input') ;
-							throw err;
-						}
-					}
-					this.getHunter(hunter, onSucces2) ;
-				}
-				getFoto(onSucces){
-					
-					var url = "http://jotihunt-API_V2.area348.nl/foto/{sleutel}/all" ;
-					this.add_get_request(url, onSucces) ;
-				}
-
-				getFotoById(id, onSucces){
-					var onSucces2 = function(data){
-						for (var i = 0; i < data.length; i ++){
-							var foto = data[i] ;
-							if (foto.id == id){
-								onSucces(foto) ;
-								break ;
-							}
-						}
-					}
-					this.getFoto(onSucces2) ;
-				}
-			}
-
-			class Vos {
-				constructor(map,team, color, hunt_icon, spot_icon, hint_icon, last_hint_icon, groep_icon){
-					this.map = map ;
-					this.color = color ;
-					this.hunt_icon = hunt_icon ;
-					this.spot_icon = spot_icon ;
-					this.hint_icon = hint_icon ;
-					this.groep_icon  = groep_icon ;
-					this.last_hint_icon = last_hint_icon ;
-					this.markers =  [] ;
-					this.team = team ;
-					this.circle  = new google.maps.Circle({
-									  map: map,
-									  radius: 0,    // afstand in metres
-									  strokeColor: '#FF6600',
-									  strokeOpacity: 0.2,
-									  strokeWeight: 0.2,
-									  fillColor: '#FF6600'
-								});
-					var polylineInfo = {
-						path: [],
-						strokeColor: this.color,
-						strokeOpacity: .6,
-						strokeWeight: 2
-					}
-					this.speed = 6.0; // in km/u
-					this.last_hint = {team:'q', id: '42'} ; //fake data
-					this.polyline = new google.maps.Polyline(polylineInfo) ;
-					this.polyline.setMap(map) ;
-				}
-
-				addGroep(groep){
-					if (groep.team != this.team){
-						return;
-					}else{
-						var infowindowdata = 
-						'<div id="infowindow">'+
-						groep.naam +
-						'<br>'+
-						groep.latitude + ', ' + groep.longitude +
-						'<br>'+
-						groep.adres+
-						'</div>' ;
-						var infowindow = new google.maps.InfoWindow({
-							content: infowindowdata
-						});
-						
-						var marker = new google.maps.Marker({
-							position: new google.maps.LatLng(groep.latitude,groep.longitude),	
-							map: map,				
-							title: groep.naam + '#'+ groep.team+ groep.id,	
-							icon: new google.maps.MarkerImage(this.groep_icon, null, null, new google.maps.Point(25,18))		
-						});
-						
-						var circle  = new google.maps.Circle({
-									  map: map,
-									  radius: 500,    // afstand in metres
-									  strokeColor: "#000000",
-									  strokeOpacity: 0.2,
-									  strokeWeight: 0.2,
-									  fillColor: this.color
-								});
-						circle.bindTo('center', marker, 'position') ;
-						google.maps.event.addListener(marker, 'click', function() {
-							infowindow.open(map,marker);
-							
-						});
-					}
-
-				}
-
-				updateRadius(){
-					var marker = null ;
-					for (var i = 0; i < this.markers.length; i++){
-						if (this.markers[i].getIcon().url == this.last_hint_icon){
-							marker = this.markers[i];
-							break;
-						}
-					}
-					if (marker == null){
-						return ;
-					}else{
-						var title = marker.getTitle().split(';') ;
-						if (title.length == 0){
-							alert('error 01. \n de cirkels zullen niet groeien \n' + marker.getTitle())
-							return ;
-						}
-						var datetime_str = title[title.length-1] ;
-						var datetime = Date.parse(datetime_str + " GMT+0100") ;
-						var _speed = (this.speed * 1000.0) / 3600.0; // snelheid in m/s
-						var dt = (Date.now().valueOf() - datetime.valueOf()) /1000 ;
-						if (dt>= 3 * 60 * 60 || dt < 0){ // 3 uur.
-							dt = 0 ;
-						}
-						var radius = dt * _speed ;
-						this.circle.setRadius(radius) ;
-						return ;
-					}
-				}
-
-				addLoc(response){
-					if (response.team == this.last_hint.team && response.id == this.last_hint.id){
-						return ;
-					} else {
-						this.last_hint = response ;
-					}
-					var infowindowdata = 
-						'<div id="infowindow">' +
-						response.team +
-						'<br>'+
-						response.datetime +
-						'<br>' +
-						response.latitude + ', ' + response.longitude +
-						'<br>'+
-						response.opmerking +
-						'<br>'+
-						response.extra +
-						'</div>' ;
-					var infowindow = new google.maps.InfoWindow({
-						content: infowindowdata
-					}) ;
-					var pos =  new google.maps.LatLng(response.latitude, response.longitude) ;
-					var icon ;
-					if (response.icon == "3"){ // icon is een spot
-						icon = this.spot_icon ;
-					} else if (response.icon == "4"){ // icon is een hunt
-						icon = this.hunt_icon ;
-					} else { // icon is een hint
-						icon = this.last_hint_icon ;
-						for (var i = 0; i < this.markers.length; i++){ // er is maar een last hint.
-							if (this.markers[i].getIcon().url == this.last_hint_icon){
-								this.markers[i].setIcon(new google.maps.MarkerImage(this.hint_icon, null, null, new google.maps.Point(16, 16)))
-							}
-						}
-					}
-					var icon_image =  new google.maps.MarkerImage(icon, null, null, new google.maps.Point(16, 16)) ;
-					var marker = new google.maps.Marker({
-						position: pos,
-						map: this.map,
-						title: response.team + "#"  + response.id+ ';' + response.datetime,
-						icon: icon_image
-					}) ;
-					if (icon == this.last_hint_icon){
-						this.circle.bindTo('center', marker, 'position') ;	
-					}
-					google.maps.event.addListener(marker, 'click', function() {
-									infowindow.open(map,marker);
-								});	
-
-					this.markers.push(marker) ;
-					var path = this.polyline.getPath() ;
-					path.push(pos) ;
-
-					this.updateRadius() ;
-				}
-			}
-			class Foto{
-				constructor(map, iconPath, iconPathKlaar, response){
-					this.map = map ;
-					this.icon_te_doen = iconPath ;
-					this.icon_klaar = iconPathKlaar ;
-					this.id = response.id;
-					var InfoWindowData = 
-						'<div id="infowindow">'+
-						response.foto_nr+
-						'<br>'+
-						 response.latitude + ', '+ response.longitude +
-						'<br>'+
-						response.info+
-						'<br>'+
-						response.extra+
-						'</div>'
-						;
-					var infowindow = new google.maps.InfoWindow({
-						content: InfoWindowData
-					});
-					this.marker = new google.maps.Marker({
-						position: new google.maps.LatLng(response.latitude, response.longitude),	
-						map: map,				
-						title: response.foto_nr,	
-						icon: new google.maps.MarkerImage(this.icon_te_doen,null,null,new google.maps.Point(10,10))		
-					});
-					this.done = false;
-				}
-				setDone(){
-					this.done = true ;
-					this.marker.setIcon(new google.maps.MarkerImage(this.icon_klaar, null,null,new google.maps.Point(10,10))) ;
-				}
-			}
-			class FotoSet{
-				constructor(map, iconPath, iconPathKlaar){
-					this.map = map ;
-					this.icon_te_doen = iconPath ;
-					this.icon_klaar = iconPathKlaar ;
-					this.notDone = [] ;
-					this.done = [] ;
-
-				}
-
-				addPhoto(response){
-					var foto = new Foto(this.map, this.icon_te_doen, this.icon_klaar, response) ;
-					this.notDone.push(foto) ;
-				}
-
-				getNotDonIds(){
-					return this.notDone.map(function(e){return e.id}) ;
-				}
-
-				fotoDone(id){
-					for (var i = 0; i < this.notDone.length ; i++){
-						var foto = this.notDone[i] ;
-						if (foto.id == id){
-							foto.setDone() ;
-							var newDone = [] ;
-							for (var j = 0; j < this.notDone.length; j++){
-								if (this.notDone[j].is != foto.id){
-									newDone.push(foto) ;
-								}
-							}
-							this.done = newDone;
-						}
-					}
-				}
-			}
-
-			class Hunter{
-				constructor(map, naam, iconPath){
-					this.map = map ;
-					this.iconPath = iconPath; 
-					var polylineInfo = {
-						path: [],
-						strokeColor: this.color,
-						strokeOpacity: .6,
-						strokeWeight: 2
-					}
-					this.polyline = new google.maps.Polyline(polylineInfo) ;
-					this.polyline.setMap(map) ;
-					this.infoWindowData = '<div id="infowindow">'+
-							naam +
-							'<br>'+
-							'{datetime}' +
-							'</div>' ;
-					this.infoWindow = new google.maps.InfoWindow({
-							content: this.infoWindowData
-						});
-
-					this.marker = new google.maps.Marker({
-						position: new google.maps.LatLng(0,0),
-						map: this.map,
-						title: naam
-					}) ;
-					this.marker.setVisible(false) ;
-					google.maps.event.addListener(this.marker, 'click', function(e) {
-							var hunter = hunters.getHunterFromLatLng(e.latLng) ;
-							hunter.infoWindow.open(map, hunter.marker);
-						});
-					this.last = {hunter: "sjlkasjdlk", id: "420"} ; // fake data
-					this.pointsExpires = [] ;
-
-				}
-				setNaam(naam){
-					this.naam = naam;
-					this.infoWindowData = '<div id="infowindow">'+
-							naam +
-							'<br>'+
-							'{datetime}' +
-							'</div>' ;
-				}
-				removeFirstLoc(){
-					this.polyline.getPath().removeAt(0) ;
-					this.pointsExpires.splice(0,1);
-					if (this.pointsExpires.length == 0){
-						this.marker.setVisible(false) ;
-						hunters.notUsedAnymore(this.naam) ;
-					}
-				}
-				
-				checkPath(){
-					while(true){
-						if (this.polyline.getPath().length == 0){
-							return ;
-						}
-						if (Date.now() < this.pointsExpires[0]){
-							return;
-						}
-						this.removeFirstLoc() ;
-					}
-				}
-
-				addLoc(response){
-					if (response.hunter != this.naam && response.id != this.last.id){
-						this.last = response ;
-						var pos =  new google.maps.LatLng(response.latitude, response.longitude) ;
-						var expires = Date.parse(response.datetime + " GMT+0100").valueOf() + 1*60*60*1000 ;
-						this.polyline.getPath().push(pos) ;
-						this.marker.setVisible(true) ;
-						this.marker.setPosition(pos) ;
-						this.infoWindow.setContent(this.infoWindowData.replace("{datetime}",response.datetime)) ;
-						if (response.icon == "999"){
-							response.icon = "0" ;
-						}
-						this.marker.setIcon(new google.maps.MarkerImage(this.iconPath.replace("{id}", response.icon), null, null, new google.maps.Point(16, 16)));
-						this.pointsExpires.push(expires) ;
-					}
-				}
-			}
-
-			class HuntersSet{
-				constructor(map, hunter_icon_path){
-					this.hunterNamen = new Set([]);
-					this.inUse = {} ;
-					this.notInUse = [] ;
-					this.hunter_icon_path = hunter_icon_path ;
-				}
-
-				notUsedAnymore(naam){
-					if (this.inUse[naam] != undefined){
-						this.notInUse.push(this.inUse[naam]) ;
-						this.inUse[naam] = undefined ;
-					}
-				}
-
-				addHunter(naam){
-					if (!this.hunterNamen.has(naam)){
-						var x = this.notInUse.pop() ;
-						if (x == undefined){
-							x = new Hunter(map, naam, this.hunter_icon_path) ;
-						}else{
-							x.setNaam(naam) ;
-						}
-						this.hunterNamen.add(naam) ;
-						this.inUse[naam] = x ;
-					}
-				}
-
-				getHunterFromLatLng(latlng){
-					for (let naam of this.hunterNamen){
-						var hunter = this.inUse[naam] ;
-						var hposition = hunter.marker.getPosition() ;
-						if (hposition.lat() ==latlng.lat() && hposition.lng() ==latlng.lng()){
-							return hunter ;
-						}
-					}
-				}
-
-				contains(naam){
-					return this.hunterNamen.has(naam) ;
-				}
-
-				addLoc(naam, response){
-					if (!this.hunterNamen.has(naam)){
-						this.addHunter(naam) ;
-					}
-					var hunter = this.inUse[naam] ;
-					hunter.addLoc(response) ;
-				}
-				checkPaths(){
-					for (let naam of this.hunterNamen){
-						var hunter = this.inUse[naam] ;
-						hunter.checkPath() ;
-					}
-				}
-				getHunter(naam){
-					if (this.hunterNamen.has(naam)){
-						return this.inUse[naam] ;
-					} else return undefined ;
-				}
-			}
-
-			var api = new ApiCaller();
+			var api = new ApiCaller() ;
 			var map ;
 			var vosA ;
 			var vosB ;
@@ -611,6 +99,8 @@
 			var vosX ;
 			var hunters ;
 			var fotos ;
+			var controls ;
+			var hunterLocSender = new myWorker('hunterlocsender.js');
 			var createMap = function createMap(){
 				//-- Locatie om de map te centreren.
 				var latlng = new google.maps.LatLng(52.085820, 6.024548);
@@ -674,6 +164,7 @@
 				} 
 				return result ;
 			}
+
 			function initializeVos(vos){
 				var onSucces= function(data){
 					data = sortById(data) ;
@@ -721,7 +212,80 @@
 					}
 				}) ;
 			}
-			var initialize = function initialize() {
+			
+			function initializeControls(){
+  				
+  				controls.addButton('stuurlocatie', 'rgb(255,0,0)', function(div){
+  					if (typeof(Worker) !== "undefined" && "geolocation" in navigator) {
+  						if (!hunterLocSender.getRunning()){
+						    var huntnaam = window.prompt('wat is je huntnaam?', api.getGebruiker()) ;
+						    var icon = "2" ;
+	  						if (huntnaam != "" && huntnaam != null){
+	  							navigator.geolocation.getCurrentPosition(function(pos){
+	  								alert("locaties worden vanaf nu verzonden") ;
+	  								hunterLocSender.start(api.sleutel, huntnaam, icon,pos) ;
+	  								div.style.backgroundColor = 'rgb(0,255,0)';
+	  							});
+	  						}else{
+	  							alert("fout: stel een huntnaam in.") ;
+	  						}
+	  					} else {
+	  						hunterLocSender.stop() ;
+	  					}
+					} else {
+					    alert("sorry hunters verzenden wordt niet gesupport door je browser") ;
+					}
+					return hunterLocSender.getRunning() ;
+  					
+  				}) ;
+  				controls.addButton('log uit', '#fff', function(div){
+  					api.logout() ;
+  				}) ;
+  				controls.addButton('reload', '#fff', function(div){
+  					initialize2() ;
+  				}) ;
+  				controls.addButton('Alpha (aan/uit) - Rood', 'rgb(0,255,0)', function(div){
+  					vosA.setVisible(!vosA.getVisible()) ;
+  					return vosA.getVisible() ;
+  				}) ;
+  				controls.addButton('Bravo (aan/uit) - Groen', 'rgb(0,255,0)', function(div){
+  					vosB.setVisible(!vosB.getVisible()) ;
+  					return vosB.getVisible() ;
+  				}) ;
+  				controls.addButton('Charlie (aan/uit) - Blauw', 'rgb(0,255,0)', function(div){
+  					vosC.setVisible(!vosC.getVisible()) ;
+  					return vosC.getVisible() ;
+  				}) ;
+  				controls.addButton('Delta (aan/uit) - Turquoise', 'rgb(0,255,0)', function(div){
+  					vosD.setVisible(!vosD.getVisible()) ;
+  					return vosD.getVisible() ;
+  				}) ;
+  				controls.addButton('Echo (aan/uit) - Paars', 'rgb(0,255,0)', function(div){
+  					vosE.setVisible(!vosE.getVisible()) ;
+  					return vosE.getVisible() ;
+  				}) ;
+  				controls.addButton('Foxtrot (aan/uit) - Geel', 'rgb(0,255,0)', function(div){
+  					vosF.setVisible(!vosF.getVisible()) ;
+  					return vosF.getVisible() ;
+  				}) ;
+  				controls.addButton('X-ray (aan/uit) - Zwart/ onbekend', 'rgb(0,255,0)', function(div){
+  					vosX.setVisible(!vosX.getVisible()) ;
+  					return vosX.getVisible() ;
+  				}) ;
+  				controls.addButton('hunters (aan/uit)', 'rgb(0,255,0)', function(div){
+  					hunters.setVisible(!hunters.getVisible()) ;
+  					return hunters.getVisible() ;
+  				}) ;
+  				controls.addButton('fotos niet klaar (aan/uit)', 'rgb(0,255,0)', function(div){
+  					fotos.setVisibleNK(!fotos.getVisibleNK()) ;
+  					return fotos.getVisibleNK() ;
+  				}) ;
+  				controls.addButton('fotos klaar (aan/uit)', 'rgb(0,255,0)', function(div){
+  					fotos.setVisibleK(!fotos.getVisibleK()) ;
+  					return fotos.getVisibleK() ;
+  				}) ;
+			}
+			function initializeGlobals(){
 				map = createMap() ;
 				vosA = new Vos(map, 'a', "#FF0000", "img/map/a/4-32X32.png", "img/map/a/3-32X32.png", "img/map/a/2-32X32.png", "img/map/a/1-32X32.png", "img/map/scouting-nederland-new-50x36-transp.png") ;
 				vosB = new Vos(map, 'b', "#00FF00", "img/map/b/4-32X32.png", "img/map/b/3-32X32.png", "img/map/b/2-32X32.png", "img/map/b/1-32X32.png", "img/map/scouting-nederland-new-50x36-transp.png") ;
@@ -732,6 +296,25 @@
 				vosX = new Vos(map, 'x', "#000000", "img/map/x/4-32X32.png", "img/map/x/3-32X32.png", "img/map/x/2-32X32.png", "img/map/x/1-32X32.png", "img/map/scouting-nederland-new-50x36-transp.png") ;
 				hunters = new HuntersSet(map, "img/map/hunter/{id}-32x32.png") ;
 				fotos = new FotoSet(map, "img/map/camera_20x20.png", "img/map/camera_20x20_klaar.png") ;
+				controls = new ConctrolCenter(map) ;
+			}
+			function initialize2(){
+				initializeGlobals() ;
+				initializeVos(vosA) ;
+				initializeVos(vosB) ;
+				initializeVos(vosC) ;
+				initializeVos(vosD) ;
+				initializeVos(vosE) ;
+				initializeVos(vosF) ;
+				initializeVos(vosX) ;
+				initializeGroepen() ;
+				initializeFotos() ;
+				initializeControls() ;
+				updateHunters() ;
+				google.maps.event.trigger(map, "resize");
+			}
+			var initialize = function initialize() {
+				initializeGlobals() ;
 				api.login() ;
 				initializeVos(vosA) ;
 				initializeVos(vosB) ;
@@ -742,8 +325,10 @@
 				initializeVos(vosX) ;
 				initializeGroepen() ;
 				initializeFotos() ;
-				updateHunters()
+				initializeControls() ;
+				updateHunters() ;
 				controller() ;
+				google.maps.event.trigger(map, "resize");
 			}
 			
 			function updateHunters(){
