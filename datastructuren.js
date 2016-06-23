@@ -125,15 +125,13 @@ class ApiCaller{
 
 	getHunterLast(hunter, onSucces){
 		var onSucces2 = function(data){
-			if (data != undefined){
-				data = data.reverse() ;
-				onSucces(data[0]) ;
-			}else{
-				var err = new Error('verkeerde input') ;
-				throw err;
+			if (data.hunter == undefined){
+				data.hunter = data.naam;
 			}
-		}
-		this.getHunter(hunter, onSucces2) ;
+			return onSucces(data);
+		};
+		var url = "http://jotihunt-API_V2.area348.nl/hunter/{sleutel}//naam/"+hunter+"/last" ;
+		this.add_get_request(url, onSucces2) ;
 	}
 	getFoto(onSucces){
 		
@@ -510,6 +508,9 @@ class Hunter{
 	}
 	
 	checkPath(){
+		while (this.polyline.getPath().length > 60){
+			this.removeFirstLoc() ;
+		}
 		while(true){
 			if (this.polyline.getPath().length == 0){
 				return ;
