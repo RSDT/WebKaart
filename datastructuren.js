@@ -1,3 +1,15 @@
+﻿function dtToUnixTS(dateString) {
+    var reggie = /(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2}):(\d{2})/;
+    var dateArray = reggie.exec(dateString);
+    var jaar =dateArray[1];
+    var maand = dateArray[2] ;
+    var dag = dateArray[3] ;
+    var uur = dateArray[4] ;
+    var minuut = dateArray[5] ;
+    var seconde =  dateArray[6] ;
+    var formated = jaar + " " + maand + " "+ dag + " " + uur + ":" + minuut + ":" + seconde ;
+    return Date.parse(formated) ;
+}
 class ApiCaller{
 	constructor(){
 		if (this.queue == null){
@@ -14,6 +26,7 @@ class ApiCaller{
 	getGebruiker(){
 		return this.gebruiker ;
 	}
+
 	login(){
 		controls.showLogin() ;
 		//na het klikken op inloggen wordt setSleutel aangeroepen.
@@ -82,17 +95,17 @@ class ApiCaller{
 	}
 
 	getGroepen(onSucces){
-		var url = "http://jotihunt-API_V2.area348.nl/sc/{sleutel}/" + 'all' ;
+		var url = "http://jotihunt-API-V2.area348.nl/sc/{sleutel}/" + 'all' ;
 		this.add_get_request(url, onSucces) ;
 	}
 
 	getLastVos(team, onSucces){
-		var url = "http://jotihunt-API_V2.area348.nl/vos/{sleutel}/" + team + '/last' ;
+		var url = "http://jotihunt-API-V2.area348.nl/vos/{sleutel}/" + team + '/last' ;
 	  	this.add_get_request(url, onSucces) ;
 	}
 
 	getVossen(team, onSucces){
-		var url = "http://jotihunt-API_V2.area348.nl/vos/{sleutel}/" + team + '/all' ;
+		var url = "http://jotihunt-API-V2.area348.nl/vos/{sleutel}/" + team + '/all' ;
 	  	this.add_get_request(url, onSucces) ;
 	}
 	
@@ -105,9 +118,9 @@ class ApiCaller{
 			}else{
 				onSucces(tail) ;
 			}
-		}
+		};
 
-		var url = "http://jotihunt-API_V2.area348.nl/hunter/{sleutel}/naam/tail/" + hunter ;
+		var url = "http://jotihunt-API-V2.area348.nl/hunter/{sleutel}/naam/tail/" + hunter ;
 		this.add_get_request(url, onSucces2) ;
 	}
 
@@ -118,8 +131,8 @@ class ApiCaller{
 				data2.push(data[i].hunter) ;
 			}
 			onSucces(data2) ;
-			}
-			var url = "http://jotihunt-API_V2.area348.nl/hunter/{sleutel}/hunter_namen" ;
+			} ;
+			var url = "http://jotihunt-API-V2.area348.nl/hunter/{sleutel}/hunter_namen" ;
 			this.add_get_request(url, onSucces2) ;
 	}
 
@@ -130,12 +143,12 @@ class ApiCaller{
 			}
 			return onSucces(data);
 		};
-		var url = "http://jotihunt-API_V2.area348.nl/hunter/{sleutel}//naam/"+hunter+"/last" ;
+		var url = "http://jotihunt-API-V2.area348.nl/hunter/{sleutel}//naam/"+hunter+"/last" ;
 		this.add_get_request(url, onSucces2) ;
 	}
 	getFoto(onSucces){
 		
-		var url = "http://jotihunt-API_V2.area348.nl/foto/{sleutel}/all" ;
+		var url = "http://jotihunt-API-V2.area348.nl/foto/{sleutel}/all" ;
 		this.add_get_request(url, onSucces) ;
 	}
 
@@ -148,7 +161,7 @@ class ApiCaller{
 					break ;
 				}
 			}
-		}
+		};
 		this.getFoto(onSucces2) ;
 	}
 }
@@ -194,11 +207,11 @@ class Vos {
 			this.visible = visible ;
 			this.circle.setVisible(visible) ;
 			this.polyline.setVisible(visible) ;
-			for (var i = 0; i < this.markers.length; i++){
+			for (let i = 0; i < this.markers.length; i++){
 				var marker = this.markers[i] ;
 				marker.setVisible(visible);
 			}
-			for (var i = 0; i < this.groepen.length; i++){
+			for (let i = 0; i < this.groepen.length; i++){
 				var groep = this.groepen[i] ;
 				groep.marker.setVisible(visible);
 				groep.circle.setVisible(visible);
@@ -209,42 +222,41 @@ class Vos {
 	addGroep(groep){
 		if (groep.team != this.team){
 			return;
-		}else{
-			var infowindowdata = 
-			'<div id="infowindow">'+
-			groep.naam +
-			'<br>'+
-			groep.latitude + ', ' + groep.longitude +
-			'<br>'+
-			groep.adres+
-			'</div>' ;
-			var infowindow = new google.maps.InfoWindow({
-				content: infowindowdata
-			});
-			
-			var marker = new google.maps.Marker({
-				position: new google.maps.LatLng(groep.latitude,groep.longitude),	
-				map: this.map,				
-				title: groep.naam + '#'+ groep.team+ groep.id,	
-				icon: new google.maps.MarkerImage(this.groep_icon, null, null, new google.maps.Point(25,18)),
-				visible: this.visible		
-			});
-			
-			var circle  = new google.maps.Circle({
-						  map: this.map,
-						  radius: 500,    // afstand in metres
-						  strokeColor: "#000000",
-						  strokeOpacity: 0.2,
-						  strokeWeight: 0.2,
-						  fillColor: this.color
-					});
-			circle.bindTo('center', marker, 'position') ;
-			google.maps.event.addListener(marker, 'click', function() {
-				infowindow.open(map,marker);
-				
-			});
-			this.groepen.push({marker: marker, circle: circle}) ;
 		}
+        var infowindowdata =
+        '<div id="infowindow">'+
+        groep.naam +
+        '<br>'+
+        groep.latitude + ', ' + groep.longitude +
+        '<br>'+
+        groep.adres+
+        '</div>' ;
+        var infowindow = new google.maps.InfoWindow({
+            content: infowindowdata
+        });
+
+        var marker = new google.maps.Marker({
+            position: new google.maps.LatLng(groep.latitude,groep.longitude),
+            map: this.map,
+            title: groep.naam + '#'+ groep.team+ groep.id,
+            icon: new google.maps.MarkerImage(this.groep_icon, null, null, new google.maps.Point(25,18)),
+            visible: this.visible
+        });
+
+        var circle  = new google.maps.Circle({
+                      map: this.map,
+                      radius: 500,    // afstand in metres
+                      strokeColor: "#000000",
+                      strokeOpacity: 0.2,
+                      strokeWeight: 0.2,
+                      fillColor: this.color
+                });
+        circle.bindTo('center', marker, 'position') ;
+        google.maps.event.addListener(marker, 'click', function() {
+            infowindow.open(map,marker);
+
+        });
+        this.groepen.push({marker: marker, circle: circle}) ;
 
 	}
 
@@ -258,14 +270,14 @@ class Vos {
 		}
 		if (marker == null){
 			return ;
-		}else{
+		}
 			var title = marker.getTitle().split(';') ;
 			if (title.length == 0){
 				alert('error 01. \n de cirkels zullen niet groeien \n' + marker.getTitle())
 				return ;
 			}
 			var datetime_str = title[title.length-1] ;
-			var datetime = Date.parse(datetime_str + " GMT+0100") ;
+			var datetime = dtToUnixTS(datetime_str) ;
 			var _speed = (this.speed * 1000.0) / 3600.0; // snelheid in m/s
 			var dt = (Date.now().valueOf() - datetime.valueOf()) /1000 ;
 			if (dt>= 3 * 60 * 60 || dt < 0){ // 3 uur.
@@ -273,8 +285,6 @@ class Vos {
 			}
 			var radius = dt * _speed ;
 			this.circle.setRadius(radius) ;
-			return ;
-		}
 	}
 
 	addLoc(response){
@@ -526,7 +536,7 @@ class Hunter{
 		if (response.hunter != this.naam && response.id != this.last.id){
 			this.last = response ;
 			var pos =  new google.maps.LatLng(response.latitude, response.longitude) ;
-			var expires = Date.parse(response.datetime + " GMT+0100").valueOf() + 1*60*60*1000 ;
+			var expires = dtToUnixTS(response.datetime) + 1*60*60*1000 ;
 			this.polyline.getPath().push(pos) ;
 			this.marker.setVisible(true) ;
 			this.marker.setPosition(pos) ;
@@ -544,10 +554,10 @@ class myWorker{
 	constructor(location){
 		this.worker = null ;
 		this.running = false;
-		this.intervalid ;
-		this.huntnaam ;
-		this.api_key ;
-		this.icon ;
+		this.intervalid = undefined;
+		this.huntnaam = undefined;
+		this.api_key = undefined;
+		this.icon = undefined;
 	}
 
 	post_request(url, data, onSucces){
@@ -567,7 +577,7 @@ class myWorker{
 	}
 	sendPos(){
 		navigator.geolocation.getCurrentPosition(function(pos){
-			var url = "http://jotihunt-API_V2.area348.nl/vos" ;
+			var url = "http://jotihunt-API-V2.area348.nl/hunter" ;
 			var latitude = pos.coords.latitude.toString() ;
 			var longitude = pos.coords.longitude.toString() ; 
 			var data = {hunter: hunterLocSender.huntnaam, SLEUTEL: hunterLocSender.api_key, icon: hunterLocSender.icon, latitude: latitude, longitude: longitude} ;
@@ -592,11 +602,10 @@ class myWorker{
 		});
 	}
 	sendFirstPos(pos){
-		var url = "http://jotihunt-API_V2.area348.nl/vos" ;
+		var url = "http://jotihunt-API-V2.area348.nl/hunter" ;
 			var latitude = pos.coords.latitude.toString() ;
 			var longitude = pos.coords.longitude.toString() ; 
 			var data = {hunter: hunterLocSender.huntnaam, SLEUTEL: hunterLocSender.api_key, icon: hunterLocSender.icon, latitude: latitude, longitude: longitude} ;
-			console.log(data) ;
 			this.post_request(url, data, function(json){
 				if(json.search("401") != -1){
 					alert ('401 error tijdens versturen hunter') ;
@@ -627,7 +636,7 @@ class myWorker{
 	}
 
 	change_api_key(api_key){
-		var data = {cmd: 'change_api_key', api_key: api_key}
+		var data = {cmd: 'change_api_key', api_key: api_key} ;
 		this.api_key = api_key ;
 	}
 	stop(){

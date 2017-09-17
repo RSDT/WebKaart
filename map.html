@@ -38,7 +38,7 @@
 			  	$.ajax({
 			  		type:'POST',
 				     url:"proxy.php", 
-				     data: {gebruiker: gebruiker, ww: ww, url: "http://jotihunt-API_V2.area348.nl/login"},
+				     data: {gebruiker: gebruiker, ww: ww, url: "http://jotihunt-API-V2.area348.nl/login"},
 				     success:function(data){
 				     	data = JSON.parse(data) ;
 				     	try{
@@ -67,12 +67,12 @@
 				<div id="login_div">
 					<label for='login'><font size="+1"><b>Login</b></font></label><br><br>
 						<p>Waarschuwing: Als je hier inlogd moet je opnieuw inloggen in de app
-						<p>
+						</p>
 						<label for='gebruikersnaam'>Gebruikersnaam</label><input class="textfield" type="text" id="gebruikersnaam" /><br>
 						<label for='wachtwoord'>Wachtwoord</label><input class="textfield" type="password" id="wachtwoord" /><br>
-						<font size="-3"><a href="http://jotihunt2016.area348.nl/user_forget_password.php">Wachtwoord vergeten?</a></font><br>
+						<a href="http://jotihunt2016.area348.nl/user_forget_password.php">Wachtwoord vergeten?</a><br>
 						<button onclick="krijgSleutel()" value="Log in">Log In</button>
-					</form> 
+
 					<!-- einde inlog formulier -->
 				</div>
 			</div>
@@ -81,8 +81,8 @@
 			/**
 			de gedachtegang achter dit script is als volgt.
 			je hebt 1 instantie van ApiCaller.
-			aan elke functie van apicaller moet je een functie meegeven die 1 argument krijgt.
-			in die funtie moet je de data verwerken.
+			aan elke functie van apicaller moet je een functie meegeven.
+			 deze functie word aangeroepen als de data opgehaald is en de data wordt meegegeven als parameter..
 
 			*/
 			var vossen ; //debug
@@ -129,14 +129,15 @@
 				var map = new google.maps.Map(document.getElementById("map_canvas"), myOptions);
 			
 				var ctaLayer = new google.maps.KmlLayer({
-					url: 'http://jotihunt2015.area348.nl/jotihunt2015.kml',
+					url: 'http://jotihunt2016.area348.nl/jotihunt2016.kml',
 					preserveViewport: true,
-					clickable: 0, // polygon ignores mouse clicks
+					clickable: 0 // polygon ignores mouse clicks
 
 				});
 				ctaLayer.setMap(map);
 				return map ;
-			}
+			} ;
+
 
 			function sortById(list){
 				var lowest = -1 ;
@@ -146,7 +147,7 @@
 				while(result.length  < list.length){
 					for(var i = 0; i < list.length; i++){
 						var item = list[i];
-						var id = parseInt(item.id) ;
+                        var id = dtToUnixTS(item.datetime);
 						if (lowest < 0 && id > last){
 							lowest = id ;
 							curr_item = item ;
@@ -159,8 +160,8 @@
 					}
 					result.push(curr_item) ;
 					curr_item =  undefined;
-					var last = lowest ;
-					var lowest = -1 ;
+					last = lowest ;
+					lowest = -1 ;
 				} 
 				return result ;
 			}
@@ -171,7 +172,7 @@
 					for (var i = 0; i < data.length; i++){
 						vos.addLoc(data[i]) ;
 					}
-				}
+				} ;
 				api.getVossen(vos.team, onSucces) ;
 			}
 
@@ -291,13 +292,13 @@
 			}
 			function initializeGlobals(){
 				map = createMap() ;
-				vosA = new Vos(map, 'a', "#FF0000", "img/map/a/4-32X32.png", "img/map/a/3-32X32.png", "img/map/a/2-32X32.png", "img/map/a/1-32X32.png", "img/map/scouting-nederland-new-50x36-transp.png") ;
-				vosB = new Vos(map, 'b', "#00FF00", "img/map/b/4-32X32.png", "img/map/b/3-32X32.png", "img/map/b/2-32X32.png", "img/map/b/1-32X32.png", "img/map/scouting-nederland-new-50x36-transp.png") ;
-				vosC = new Vos(map, 'c', "#0000FF", "img/map/c/4-32X32.png", "img/map/c/3-32X32.png", "img/map/c/2-32X32.png", "img/map/c/1-32X32.png", "img/map/scouting-nederland-new-50x36-transp.png") ;
-				vosD = new Vos(map, 'd', "#00FFFF", "img/map/d/4-32X32.png", "img/map/d/3-32X32.png", "img/map/d/2-32X32.png", "img/map/d/1-32X32.png", "img/map/scouting-nederland-new-50x36-transp.png") ;
-				vosE = new Vos(map, 'e', "#FF00FF", "img/map/e/4-32X32.png", "img/map/e/3-32X32.png", "img/map/e/2-32X32.png", "img/map/e/1-32X32.png", "img/map/scouting-nederland-new-50x36-transp.png") ;
-				vosF = new Vos(map, 'f', "#FFFF00", "img/map/f/4-32X32.png", "img/map/f/3-32X32.png", "img/map/f/2-32X32.png", "img/map/f/1-32X32.png", "img/map/scouting-nederland-new-50x36-transp.png") ;
-				vosX = new Vos(map, 'x', "#000000", "img/map/x/4-32X32.png", "img/map/x/3-32X32.png", "img/map/x/2-32X32.png", "img/map/x/1-32X32.png", "img/map/scouting-nederland-new-50x36-transp.png") ;
+				vosA = new Vos(map, 'a', "#FF0000", "img/map/a/4-32x32.png", "img/map/a/3-32x32.png", "img/map/a/2-32x32.png", "img/map/a/1-32x32.png", "img/map/scouting-nederland-new-50x36-transp.png") ;
+				vosB = new Vos(map, 'b', "#00FF00", "img/map/b/4-32x32.png", "img/map/b/3-32x32.png", "img/map/b/2-32x32.png", "img/map/b/1-32x32.png", "img/map/scouting-nederland-new-50x36-transp.png") ;
+				vosC = new Vos(map, 'c', "#0000FF", "img/map/c/4-32x32.png", "img/map/c/3-32x32.png", "img/map/c/2-32x32.png", "img/map/c/1-32x32.png", "img/map/scouting-nederland-new-50x36-transp.png") ;
+				vosD = new Vos(map, 'd', "#00FFFF", "img/map/d/4-32x32.png", "img/map/d/3-32x32.png", "img/map/d/2-32x32.png", "img/map/d/1-32x32.png", "img/map/scouting-nederland-new-50x36-transp.png") ;
+				vosE = new Vos(map, 'e', "#FF00FF", "img/map/e/4-32x32.png", "img/map/e/3-32x32.png", "img/map/e/2-32x32.png", "img/map/e/1-32x32.png", "img/map/scouting-nederland-new-50x36-transp.png") ;
+				vosF = new Vos(map, 'f', "#FFFF00", "img/map/f/4-32x32.png", "img/map/f/3-32x32.png", "img/map/f/2-32x32.png", "img/map/f/1-32x32.png", "img/map/scouting-nederland-new-50x36-transp.png") ;
+				vosX = new Vos(map, 'x', "#000000", "img/map/x/4-32x32.png", "img/map/x/3-32x32.png", "img/map/x/2-32x32.png", "img/map/x/1-32x32.png", "img/map/scouting-nederland-new-50x36-transp.png") ;
 				hunters = new HuntersSet(map, "img/map/hunter/{id}-32x32.png") ;
 				fotos = new FotoSet(map, "img/map/camera_20x20.png", "img/map/camera_20x20_klaar.png") ;
 				controls = new ConctrolCenter(map) ;
@@ -335,7 +336,7 @@
 				updateHunters() ;
 				controller() ;
 				google.maps.event.trigger(map, "resize");
-			}
+			};
 			
 			function updateHunters(){
 				api.getHunterNamen(function(data){
@@ -405,7 +406,9 @@
 				}
 			}
 			var controller =function controller(){
-				var vosUpdateInterval = 60 * 1000; // 60 sec
+				var vosUpdateInterval = 60 * 1000; // 60 
+				setInterval(updateHunters, 60 * 1000) ; 
+				setInterval(updateFotos, 60 * 1000) ;
 				setInterval(updateVosA, vosUpdateInterval) ;
 				setInterval(updateVosB, vosUpdateInterval) ; 
 				setInterval(updateVosC, vosUpdateInterval) ;
@@ -413,8 +416,7 @@
 				setInterval(updateVosE, vosUpdateInterval) ;
 				setInterval(updateVosF, vosUpdateInterval) ;
 				setInterval(updateVosX, vosUpdateInterval) ;
-				setInterval(updateHunters, 60 * 1000) ; 
-				setInterval(updateFotos, 60 * 1000) ;
+				
 			}
 		</script>
 		
