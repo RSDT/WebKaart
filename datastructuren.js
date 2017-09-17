@@ -10,6 +10,7 @@
     var formated = jaar + " " + maand + " "+ dag + " " + uur + ":" + minuut + ":" + seconde ;
     return Date.parse(formated) ;
 }
+
 class ApiCaller{
 	constructor(){
 		if (this.queue == null){
@@ -95,17 +96,17 @@ class ApiCaller{
 	}
 
 	getGroepen(onSucces){
-		var url = "http://jotihunt-API-V2.area348.nl/sc/{sleutel}/" + 'all' ;
+		var url = "http://jotihunt-API-V3.area348.nl/sc/{sleutel}/" + 'all' ;
 		this.add_get_request(url, onSucces) ;
 	}
 
 	getLastVos(team, onSucces){
-		var url = "http://jotihunt-API-V2.area348.nl/vos/{sleutel}/" + team + '/last' ;
+		var url = "http://jotihunt-API-V3.area348.nl/vos/{sleutel}/" + team + '/last' ;
 	  	this.add_get_request(url, onSucces) ;
 	}
 
 	getVossen(team, onSucces){
-		var url = "http://jotihunt-API-V2.area348.nl/vos/{sleutel}/" + team + '/all' ;
+		var url = "http://jotihunt-API-V3.area348.nl/vos/{sleutel}/" + team + '/all' ;
 	  	this.add_get_request(url, onSucces) ;
 	}
 	
@@ -120,7 +121,7 @@ class ApiCaller{
 			}
 		};
 
-		var url = "http://jotihunt-API-V2.area348.nl/hunter/{sleutel}/naam/tail/" + hunter ;
+		var url = "http://jotihunt-API-V3.area348.nl/hunter/{sleutel}/naam/tail/" + hunter ;
 		this.add_get_request(url, onSucces2) ;
 	}
 
@@ -132,7 +133,7 @@ class ApiCaller{
 			}
 			onSucces(data2) ;
 			} ;
-			var url = "http://jotihunt-API-V2.area348.nl/hunter/{sleutel}/hunter_namen" ;
+			var url = "http://jotihunt-API-V3.area348.nl/hunter/{sleutel}/hunter_namen" ;
 			this.add_get_request(url, onSucces2) ;
 	}
 
@@ -143,12 +144,12 @@ class ApiCaller{
 			}
 			return onSucces(data);
 		};
-		var url = "http://jotihunt-API-V2.area348.nl/hunter/{sleutel}//naam/"+hunter+"/last" ;
+		var url = "http://jotihunt-API-V3.area348.nl/hunter/{sleutel}//naam/"+hunter+"/last" ;
 		this.add_get_request(url, onSucces2) ;
 	}
 	getFoto(onSucces){
 		
-		var url = "http://jotihunt-API-V2.area348.nl/foto/{sleutel}/all" ;
+		var url = "http://jotihunt-API-V3.area348.nl/foto/{sleutel}/all" ;
 		this.add_get_request(url, onSucces) ;
 	}
 
@@ -577,7 +578,7 @@ class myWorker{
 	}
 	sendPos(){
 		navigator.geolocation.getCurrentPosition(function(pos){
-			var url = "http://jotihunt-API-V2.area348.nl/hunter" ;
+			var url = "http://jotihunt-API-V3.area348.nl/hunter" ;
 			var latitude = pos.coords.latitude.toString() ;
 			var longitude = pos.coords.longitude.toString() ; 
 			var data = {hunter: hunterLocSender.huntnaam, SLEUTEL: hunterLocSender.api_key, icon: hunterLocSender.icon, latitude: latitude, longitude: longitude} ;
@@ -602,7 +603,7 @@ class myWorker{
 		});
 	}
 	sendFirstPos(pos){
-		var url = "http://jotihunt-API-V2.area348.nl/hunter" ;
+		var url = "http://jotihunt-API-V3.area348.nl/hunter" ;
 			var latitude = pos.coords.latitude.toString() ;
 			var longitude = pos.coords.longitude.toString() ; 
 			var data = {hunter: hunterLocSender.huntnaam, SLEUTEL: hunterLocSender.api_key, icon: hunterLocSender.icon, latitude: latitude, longitude: longitude} ;

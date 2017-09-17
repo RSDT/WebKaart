@@ -19,7 +19,7 @@ function post_request(url, data, onSucces){
 				}
 function sendPos(){
 	navigator.geolocation.getCurrentPosition(function(pos){
-		var url = "http://jotihunt-API-V2.area348.nl/vos" ;
+		var url = "http://jotihunt-API-V3.area348.nl/vos" ;
 		var latitude = pos.coords.latitude ;
 		var longitude = pos.coords.longitude ;
 		var data = {hunter: huntnaam, SLEUTEL: api_key, icon: icon, latitude: latitude, longitude: longitude} ;
