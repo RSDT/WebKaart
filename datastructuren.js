@@ -262,29 +262,23 @@ class Vos {
 	}
 
 	updateRadius(){
-		var marker = null ;
-		for (var i = 0; i < this.markers.length; i++){
-			if (this.markers[i].getIcon().url == this.last_hint_icon){
-				marker = this.markers[i];
-				break;
-			}
-		}
-		if (marker == null){
-			return ;
-		}
-			var title = marker.getTitle().split(';') ;
+	    if (this.markers.length <=0){
+	        return;
+        }
+		var marker = this.markers[0] ;
+			let title = marker.getTitle().split(';') ;
 			if (title.length == 0){
 				alert('error 01. \n de cirkels zullen niet groeien \n' + marker.getTitle())
 				return ;
 			}
-			var datetime_str = title[title.length-1] ;
-			var datetime = dtToUnixTS(datetime_str) ;
-			var _speed = (this.speed * 1000.0) / 3600.0; // snelheid in m/s
+			let datetime_str = title[title.length-1] ;
+			let datetime = dtToUnixTS(datetime_str) ;
+			let _speed = (this.speed * 1000.0) / 3600.0; // snelheid in m/s
 			var dt = (Date.now().valueOf() - datetime.valueOf()) /1000 ;
 			if (dt>= 3 * 60 * 60 || dt < 0){ // 3 uur.
 				dt = 0 ;
 			}
-			var radius = dt * _speed ;
+			let radius = dt * _speed ;
 			this.circle.setRadius(radius) ;
 	}
 
@@ -294,7 +288,7 @@ class Vos {
 		} else {
 			this.last_hint = response ;
 		}
-		var infowindowdata = 
+		let infowindowdata =
 			'<div id="infowindow">' +
 			response.team +
 			'<br>'+
