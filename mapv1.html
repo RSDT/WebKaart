@@ -1,0 +1,427 @@
+<!DOCTYPE html>	
+<html>
+	<head>
+		<title>Jotihunt 2017 - Rhedense Pioniers - Map</title>
+			
+		<!-- meta data -->
+		<META NAME="Author" 		CONTENT= "Mattijn - rhedensepioniers.nl - Rheden">
+		<META NAME="Description" 	CONTENT= "De Jotihunt 2017 site van de RhedensePioniers">
+		<META NAME="KeyWords" 		CONTENT= "www.area348.nl, jotihunt, 2017, rhedense pioniers, scouting, vossen, jacht, vossen jacht, gelderland, Rheden">
+		<meta name="robots" 		content= "index, follow">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+
+
+        <!-- links naar stylesheet / favicon -->
+		<!-- <link rel="shortcut icon" 	href="http://jotihunt.net/favicon.ico" type="image/x-icon"> -->
+		<!-- <link rel="stylesheet" 	type="text/css" href="css/header.css" /> -->
+		<link rel="stylesheet" 	type="text/css" href="css/map.css" />
+		
+		<!-- <script type="text/javascript" src="java/dropdown_menu.js"></script> --> 
+		<!-- 
+			<script type="text/javascript" src="java/jquery-1.8.2.min.js"></script>
+		-->
+		<script src="sha1.js"></script>
+		<script
+			src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAIh1-OVRST5StWBdM8iLCWvgp3qXUIXmo">
+		</script>
+
+		<script
+			src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.2/jquery.min.js">
+		</script>
+
+	</head>
+	<body onload="initialize()">
+		<script type="text/javascript">
+			
+			function krijgSleutel()
+			{
+				var gebruiker = document.getElementById('gebruikersnaam').value  ;
+			  	var ww = hex_sha1 ( document.getElementById( 'wachtwoord' ).value ) ;
+			  	$.ajax({
+			  		type:'POST',
+				     url:"proxy.php", 
+				     data: {gebruiker: gebruiker, ww: ww, url: "http://jotihunt-API-V3.area348.nl/login"},
+				     success:function(data){
+				     	data = JSON.parse(data) ;
+				     	try{
+				     		var sleutel = data.SLEUTEL ;
+				        	api.setSleutel(sleutel) ;
+				        	api.setGebruiker(gebruiker) ;
+				        	controls.hideLogin() ;
+				        }catch(err){
+
+				     		alert('onbekende gebruikersnaam en/of verkeerd wachtwoord ingevoerd.') ;
+				     	}
+				     },
+				     error:function(){
+				         alert("login Error");
+				     },
+				     done:function(){
+			  			
+			  		}
+				});
+			  	return false;
+			}
+		</script>
+
+		<div id="map_canvas" style="width: 100%; height: 100%;"></div>
+		<div id="respond">
+				<div id="login_div">
+					<label for='login'><font size="+1"><b>Login</b></font></label><br><br>
+						<p>Waarschuwing: Als je hier inlogd moet je opnieuw inloggen in de app
+						</p>
+						<label for='gebruikersnaam'>Gebruikersnaam</label><input class="textfield" type="text" id="gebruikersnaam" /><br>
+						<label for='wachtwoord'>Wachtwoord</label><input class="textfield" type="password" id="wachtwoord" /><br>
+						<a href="http://jotihunt2017.area348.nl/user_forget_password.php">Wachtwoord vergeten?</a><br>
+						<button onclick="krijgSleutel()" value="Log in">Log In</button>
+
+					<!-- einde inlog formulier -->
+				</div>
+			</div>
+		<script src="datastructurenv1.js"></script>
+		<script>
+			/**
+			de gedachtegang achter dit script is als volgt.
+			je hebt 1 instantie van ApiCaller.
+			aan elke functie van apicaller moet je een functie meegeven.
+			 deze functie word aangeroepen als de data opgehaald is en de data wordt meegegeven als parameter..
+
+			*/
+			var vossen ; //debug
+			
+
+			var api = new ApiCaller() ;
+			var map ;
+			var vosA ;
+			var vosB ;
+			var vosC ;
+			var vosD ;
+			var vosE ;
+			var vosF ;
+			var vosX ;
+			var hunters ;
+			var fotos ;
+			var controls ;
+			var hunterLocSender = new myWorker('hunterlocsender.js');
+			var createMap = function createMap(){
+				//-- Locatie om de map te centreren.
+				var latlng = new google.maps.LatLng(52.085820, 6.024548);
+
+				//-- Kaart opbouw.
+				var myOptions = {
+					zoom: 12,
+					center: latlng, //-- data invoer via var latlng
+					mapTypeControl: true,
+				    mapTypeControlOptions: {
+						style: google.maps.MapTypeControlStyle.DEFAULT 
+					},
+					
+					//-- Map controls opties.
+					overviewMapControl: false,
+					panControl: true,
+					rotateControl: true,
+					scaleControl: false,
+					streetViewControl: true,
+					zoomControl: true,
+
+					//-- Standaard kaart type.
+					mapTypeId: google.maps.MapTypeId.ROADMAP
+				};
+
+				var map = new google.maps.Map(document.getElementById("map_canvas"), myOptions);
+			
+				var ctaLayer = new google.maps.KmlLayer({
+					url: 'http://jotihunt2017.area348.nl/jotihunt2017.kml',
+					preserveViewport: true,
+					clickable: 0 // polygon ignores mouse clicks
+
+				});
+				ctaLayer.setMap(map);
+				return map ;
+			} ;
+
+
+			function sortById(list){
+				var lowest = -1 ;
+				var last  = -1;
+				var curr_item ;
+				var result = [] ;
+				while(result.length  < list.length){
+					for(var i = 0; i < list.length; i++){
+						var item = list[i];
+                        var id = dtToUnixTS(item.datetime);
+						if (lowest < 0 && id > last){
+							lowest = id ;
+							curr_item = item ;
+						}else{
+							if (id > last && id < lowest){
+								lowest = id;
+								curr_item = item ;
+							}
+						}
+					}
+					result.push(curr_item) ;
+					curr_item =  undefined;
+					last = lowest ;
+					lowest = -1 ;
+				} 
+				return result ;
+			}
+
+			function initializeVos(vos){
+				var onSucces= function(data){
+					data = sortById(data) ;
+					for (var i = 0; i < data.length; i++){
+						vos.addLoc(data[i]) ;
+					}
+				} ;
+				api.getVossen(vos.team, onSucces) ;
+			}
+
+			function initializeGroepen(){
+				var vos ;
+				var onSucces = function(json)
+					{
+						for (var i = 0; i <json.length; i++){
+							var groep = json[i] ;
+							groep.team = groep.team.toLowerCase() ;
+							if (groep.team == 'a'){
+								vos = vosA;
+							} else if (groep.team == 'b'){
+								vos = vosB;
+							} else if (groep.team == 'c'){
+								vos = vosC;
+							} else if (groep.team == 'd'){
+								vos = vosD;
+							} else if (groep.team == 'e'){
+								vos = vosE;
+							} else if (groep.team == 'f'){
+								vos = vosF;
+							} else if (groep.team == 'x'){
+								vos = vosX;
+							} else {
+								alert('error onbekend deelgebied: ' + groep.team) ;
+								return ;
+							}
+							vos.addGroep(groep);
+						} 
+					};
+				api.getGroepen(onSucces) ; 
+			}
+			function initializeFotos(){
+				api.getFoto(function(data){
+					for (var i = 0; i < data.length; i++){
+						fotos.addPhoto(data[i]) ;
+					}
+				}) ;
+			}
+			
+			function initializeControls(){
+  				
+  				controls.addButton('stuurlocatie', 'rgb(255,0,0)', function(div){
+  					if (typeof(Worker) !== "undefined" && "geolocation" in navigator) {
+  						if (!hunterLocSender.getRunning()){
+						    var huntnaam = window.prompt('wat is je huntnaam?', api.getGebruiker()) ;
+						    var icon = "2" ;
+	  						if (huntnaam != "" && huntnaam != null){
+	  							navigator.geolocation.getCurrentPosition(function(pos){
+	  								alert("locaties worden vanaf nu verzonden") ;
+	  								hunterLocSender.start(api.sleutel, huntnaam, icon,pos) ;
+	  								div.style.backgroundColor = 'rgb(0,255,0)';
+	  							});
+	  						}else{
+	  							alert("fout: stel een huntnaam in.") ;
+	  						}
+	  					} else {
+	  						hunterLocSender.stop() ;
+	  					}
+					} else {
+					    alert("sorry hunters verzenden wordt niet gesupport door je browser") ;
+					}
+					return hunterLocSender.getRunning() ;
+  					
+  				}) ;
+  				controls.addButton('Centreer Kaart', '#fff', function(div){
+  					map.setCenter(new google.maps.LatLng(52.087656, 5.892773)) ;
+  					map.setZoom(10) ;
+  				}) ;
+  				controls.addButton('log uit', '#fff', function(div){
+  					api.logout() ;
+  				}) ;
+  				controls.addButton('reload', '#fff', function(div){
+  					initialize2() ;
+  				}) ;
+  				controls.addButton('Alpha (aan/uit) - Rood', 'rgb(0,255,0)', function(div){
+  					vosA.setVisible(!vosA.getVisible()) ;
+  					return vosA.getVisible() ;
+  				}) ;
+  				controls.addButton('Bravo (aan/uit) - Groen', 'rgb(0,255,0)', function(div){
+  					vosB.setVisible(!vosB.getVisible()) ;
+  					return vosB.getVisible() ;
+  				}) ;
+  				controls.addButton('Charlie (aan/uit) - Blauw', 'rgb(0,255,0)', function(div){
+  					vosC.setVisible(!vosC.getVisible()) ;
+  					return vosC.getVisible() ;
+  				}) ;
+  				controls.addButton('Delta (aan/uit) - Turquoise', 'rgb(0,255,0)', function(div){
+  					vosD.setVisible(!vosD.getVisible()) ;
+  					return vosD.getVisible() ;
+  				}) ;
+  				controls.addButton('Echo (aan/uit) - Paars', 'rgb(0,255,0)', function(div){
+  					vosE.setVisible(!vosE.getVisible()) ;
+  					return vosE.getVisible() ;
+  				}) ;
+  				controls.addButton('Foxtrot (aan/uit) - Geel', 'rgb(0,255,0)', function(div){
+  					vosF.setVisible(!vosF.getVisible()) ;
+  					return vosF.getVisible() ;
+  				}) ;
+  				controls.addButton('X-ray (aan/uit) - Zwart/ onbekend', 'rgb(0,255,0)', function(div){
+  					vosX.setVisible(!vosX.getVisible()) ;
+  					return vosX.getVisible() ;
+  				}) ;
+  				controls.addButton('hunters (aan/uit)', 'rgb(0,255,0)', function(div){
+  					hunters.setVisible(!hunters.getVisible()) ;
+  					return hunters.getVisible() ;
+  				}) ;
+  				controls.addButton('fotos niet klaar (aan/uit)', 'rgb(0,255,0)', function(div){
+  					fotos.setVisibleNK(!fotos.getVisibleNK()) ;
+  					return fotos.getVisibleNK() ;
+  				}) ;
+  				controls.addButton('fotos klaar (aan/uit)', 'rgb(0,255,0)', function(div){
+  					fotos.setVisibleK(!fotos.getVisibleK()) ;
+  					return fotos.getVisibleK() ;
+  				}) ;
+			}
+			function initializeGlobals(){
+				map = createMap() ;
+				vosA = new Vos(map, 'a', "#FF0000", "img/map/a/4-32x32.png", "img/map/a/3-32x32.png", "img/map/a/2-32x32.png", "img/map/a/1-32x32.png", "img/map/scouting-nederland-new-50x36-transp.png") ;
+				vosB = new Vos(map, 'b', "#00FF00", "img/map/b/4-32x32.png", "img/map/b/3-32x32.png", "img/map/b/2-32x32.png", "img/map/b/1-32x32.png", "img/map/scouting-nederland-new-50x36-transp.png") ;
+				vosC = new Vos(map, 'c', "#0000FF", "img/map/c/4-32x32.png", "img/map/c/3-32x32.png", "img/map/c/2-32x32.png", "img/map/c/1-32x32.png", "img/map/scouting-nederland-new-50x36-transp.png") ;
+				vosD = new Vos(map, 'd', "#00FFFF", "img/map/d/4-32x32.png", "img/map/d/3-32x32.png", "img/map/d/2-32x32.png", "img/map/d/1-32x32.png", "img/map/scouting-nederland-new-50x36-transp.png") ;
+				vosE = new Vos(map, 'e', "#FF00FF", "img/map/e/4-32x32.png", "img/map/e/3-32x32.png", "img/map/e/2-32x32.png", "img/map/e/1-32x32.png", "img/map/scouting-nederland-new-50x36-transp.png") ;
+				vosF = new Vos(map, 'f', "#FFFF00", "img/map/f/4-32x32.png", "img/map/f/3-32x32.png", "img/map/f/2-32x32.png", "img/map/f/1-32x32.png", "img/map/scouting-nederland-new-50x36-transp.png") ;
+				vosX = new Vos(map, 'x', "#000000", "img/map/x/4-32x32.png", "img/map/x/3-32x32.png", "img/map/x/2-32x32.png", "img/map/x/1-32x32.png", "img/map/scouting-nederland-new-50x36-transp.png") ;
+				hunters = new HuntersSet(map, "img/map/hunter/{id}-32x32.png") ;
+				fotos = new FotoSet(map, "img/map/camera_20x20.png", "img/map/camera_20x20_klaar.png") ;
+				controls = new ConctrolCenter(map) ;
+			}
+			function initialize2(){
+				controls.detachLogin() ;
+				initializeGlobals() ;
+				initializeVos(vosA) ;
+				initializeVos(vosB) ;
+				initializeVos(vosC) ;
+				initializeVos(vosD) ;
+				initializeVos(vosE) ;
+				initializeVos(vosF) ;
+				initializeVos(vosX) ;
+				initializeGroepen() ;
+				initializeFotos() ;
+				initializeControls() ;
+				updateHunters() ;
+				controls.hideLogin() ;
+				google.maps.event.trigger(map, "resize");
+			}
+			var initialize = function initialize() {
+				initializeGlobals() ;
+				api.login() ;
+				initializeVos(vosA) ;
+				initializeVos(vosB) ;
+				initializeVos(vosC) ;
+				initializeVos(vosD) ;
+				initializeVos(vosE) ;
+				initializeVos(vosF) ;
+				initializeVos(vosX) ;
+				initializeGroepen() ;
+				initializeFotos() ;
+				initializeControls() ;
+				updateHunters() ;
+				controller() ;
+				google.maps.event.trigger(map, "resize");
+			};
+			
+			function updateHunters(){
+				api.getHunterNamen(function(data){
+					for (var i = 0; i < data.length; i++){
+						var naam = data[i] ;
+						if (!hunters.contains(naam)){
+							hunters.addHunter(naam);
+							api.getHunter(naam,function(data2){
+								data2 = sortById(data2) ;
+								for (var i = 0 ; i < data2.length; i++){
+									var loc = data2[i] ;
+									hunters.addLoc(loc.hunter, loc) ;
+								}
+							});
+						}else{
+							api.getHunterLast(naam, function(data){
+								hunters.addLoc(data.hunter, data);
+							}) ;
+						}
+					}
+				}) ;
+				hunters.checkPaths() ;
+			}
+
+			function updateVos(vos, team){
+				api.getLastVos(team, function(data){
+					vos.addLoc(data) ;
+				}) ;
+			}
+			function updateVosA(){
+				updateVos(vosA, 'a') ;
+				vosA.updateRadius() ;
+			}
+			function updateVosB(){
+				updateVos(vosB, 'b') ;
+				vosB.updateRadius() ;
+			}
+			function updateVosC(){
+				updateVos(vosC, 'c') ;
+				vosC.updateRadius() ;
+			}
+			function updateVosD(){
+				updateVos(vosD, 'd') ;
+				vosD.updateRadius() ;
+			}
+			function updateVosE(){
+				updateVos(vosE, 'e') ;
+				vosE.updateRadius() ;
+			}
+			function updateVosF(){
+				updateVos(vosF, 'f') ;
+				vosF.updateRadius() ;
+			}
+			function updateVosX(){
+				updateVos(vosX, 'x') ;
+				vosX.updateRadius() ;
+			}
+			function updateFotos(){
+				var ids_to_update = fotos.getNotDonIds() ;
+				for ( var i = 0; i < ids_to_update.length; i++){
+					var id = ids_to_update[i] ;
+					api.getFotoById(id,function(data){
+						if (data.klaar  == "1"){
+							fotos.fotoDone(data.id) ;
+						}
+					});
+				}
+			}
+			var controller =function controller(){
+				var vosUpdateInterval = 60 * 1000; // 60 
+				setInterval(updateHunters, 60 * 1000) ; 
+				setInterval(updateFotos, 60 * 1000) ;
+				setInterval(updateVosA, vosUpdateInterval) ;
+				setInterval(updateVosB, vosUpdateInterval) ; 
+				setInterval(updateVosC, vosUpdateInterval) ;
+				setInterval(updateVosD, vosUpdateInterval) ;
+				setInterval(updateVosE, vosUpdateInterval) ;
+				setInterval(updateVosF, vosUpdateInterval) ;
+				setInterval(updateVosX, vosUpdateInterval) ;
+				
+			}
+		</script>
+		
+			
+	</body>
+</html>
