@@ -1,15 +1,17 @@
 <!DOCTYPE html>	
 <html>
 	<head>
-		<title>Jotihunt 2015 - Rhedense Pioniers - Map</title>
+		<title>Jotihunt 2017 - Rhedense Pioniers - Map</title>
 			
 		<!-- meta data -->
-		<META NAME="Author" 		CONTENT= "Micky - Redsheep.nl - Rheden">
-		<META NAME="Description" 	CONTENT= "De Jotihunt 2016 site van de RhedensePioniers">
-		<META NAME="KeyWords" 		CONTENT= "www.area348.nl, jotihunt, 2016, rhedense pioniers, scouting, vossen, jacht, vossen jacht, gelderland, Rheden">
+		<META NAME="Author" 		CONTENT= "Mattijn - rhedensepioniers.nl - Rheden">
+		<META NAME="Description" 	CONTENT= "De Jotihunt 2017 site van de RhedensePioniers">
+		<META NAME="KeyWords" 		CONTENT= "www.area348.nl, jotihunt, 2017, rhedense pioniers, scouting, vossen, jacht, vossen jacht, gelderland, Rheden">
 		<meta name="robots" 		content= "index, follow">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
 
-		<!-- links naar stylesheet / favicon -->
+
+        <!-- links naar stylesheet / favicon -->
 		<!-- <link rel="shortcut icon" 	href="http://jotihunt.net/favicon.ico" type="image/x-icon"> -->
 		<!-- <link rel="stylesheet" 	type="text/css" href="css/header.css" /> -->
 		<link rel="stylesheet" 	type="text/css" href="css/map.css" />
@@ -20,7 +22,7 @@
 		-->
 		<script src="sha1.js"></script>
 		<script
-			src="https://maps.googleapis.com/maps/api/js?key=AIzaSyA0I_W0xEcD625iCQkhpCo9oacP3P1e0iA">
+			src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAIh1-OVRST5StWBdM8iLCWvgp3qXUIXmo">
 		</script>
 
 		<script
@@ -70,7 +72,7 @@
 						</p>
 						<label for='gebruikersnaam'>Gebruikersnaam</label><input class="textfield" type="text" id="gebruikersnaam" /><br>
 						<label for='wachtwoord'>Wachtwoord</label><input class="textfield" type="password" id="wachtwoord" /><br>
-						<a href="http://jotihunt2016.area348.nl/user_forget_password.php">Wachtwoord vergeten?</a><br>
+						<a href="http://jotihunt2017.area348.nl/user_forget_password.php">Wachtwoord vergeten?</a><br>
 						<button onclick="krijgSleutel()" value="Log in">Log In</button>
 
 					<!-- einde inlog formulier -->
@@ -129,7 +131,7 @@
 				var map = new google.maps.Map(document.getElementById("map_canvas"), myOptions);
 			
 				var ctaLayer = new google.maps.KmlLayer({
-					url: 'http://jotihunt2016.area348.nl/jotihunt2016.kml',
+					url: 'http://jotihunt2017.area348.nl/jotihunt2017.kml',
 					preserveViewport: true,
 					clickable: 0 // polygon ignores mouse clicks
 
