@@ -9,7 +9,14 @@
 		<META NAME="KeyWords" 		CONTENT= "www.area348.nl, jotihunt, 2017, rhedense pioniers, scouting, vossen, jacht, vossen jacht, gelderland, Rheden">
 		<meta name="robots" 		content= "index, follow">
         <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+        <link rel="stylesheet" href="https://unpkg.com/leaflet@1.2.0/dist/leaflet.css"
+              integrity="sha512-M2wvCLH6DSRazYeZRIm1JnYyh22purTM+FDB5CsyxtQJYeKq83arPe5wgbNmcFXGqiSH2XR8dT/fJISVA1r/zQ=="
+              crossorigin=""/>
 
+        <!-- Make sure you put this AFTER Leaflet's CSS -->
+        <script src="https://unpkg.com/leaflet@1.2.0/dist/leaflet.js"
+                integrity="sha512-lInM/apFSqyy1o6s89K4iQUKg6ppXEgsVxT35HbzUupEVRh2Eu9Wdl4tHj7dZO0s1uvplcYGmt3498TtHq+log=="
+                crossorigin=""></script>
 
         <!-- links naar stylesheet / favicon -->
 		<!-- <link rel="shortcut icon" 	href="http://jotihunt.net/favicon.ico" type="image/x-icon"> -->
@@ -21,14 +28,11 @@
 			<script type="text/javascript" src="java/jquery-1.8.2.min.js"></script>
 		-->
 		<script src="sha1.js"></script>
-		<script
-			src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAIh1-OVRST5StWBdM8iLCWvgp3qXUIXmo">
-		</script>
 
 		<script
 			src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.2/jquery.min.js">
 		</script>
-
+        <script src='//api.tiles.mapbox.com/mapbox.js/plugins/leaflet-omnivore/v0.3.1/leaflet-omnivore.min.js'></script>
 	</head>
 	<body onload="initialize()">
 		<script type="text/javascript">
@@ -42,16 +46,18 @@
 				     url:"proxy.php", 
 				     data: {gebruiker: gebruiker, ww: ww, url: "http://jotihunt-API-V3.area348.nl/login"},
 				     success:function(data){
-				     	data = JSON.parse(data) ;
+
 				     	try{
-				     		var sleutel = data.SLEUTEL ;
-				        	api.setSleutel(sleutel) ;
-				        	api.setGebruiker(gebruiker) ;
-				        	controls.hideLogin() ;
+				     	    data = JSON.parse(data) ;
+                            api.setSleutel(sleutel) ;
+                            api.setGebruiker(gebruiker) ;
+                            controls.hideLogin() ;
 				        }catch(err){
 
 				     		alert('onbekende gebruikersnaam en/of verkeerd wachtwoord ingevoerd.') ;
 				     	}
+                         var sleutel = data.SLEUTEL ;
+
 				     },
 				     error:function(){
 				         alert("login Error");
@@ -105,38 +111,20 @@
 			var hunterLocSender = new myWorker('hunterlocsender.js');
 			var createMap = function createMap(){
 				//-- Locatie om de map te centreren.
-				var latlng = new google.maps.LatLng(52.085820, 6.024548);
 
-				//-- Kaart opbouw.
-				var myOptions = {
-					zoom: 12,
-					center: latlng, //-- data invoer via var latlng
-					mapTypeControl: true,
-				    mapTypeControlOptions: {
-						style: google.maps.MapTypeControlStyle.DEFAULT 
-					},
-					
-					//-- Map controls opties.
-					overviewMapControl: false,
-					panControl: true,
-					rotateControl: true,
-					scaleControl: false,
-					streetViewControl: true,
-					zoomControl: true,
-
-					//-- Standaard kaart type.
-					mapTypeId: google.maps.MapTypeId.ROADMAP
-				};
-
-				var map = new google.maps.Map(document.getElementById("map_canvas"), myOptions);
-			
-				var ctaLayer = new google.maps.KmlLayer({
-					url: 'http://jotihunt2017.area348.nl/jotihunt2017.kml',
-					preserveViewport: true,
-					clickable: 0 // polygon ignores mouse clicks
-
-				});
-				ctaLayer.setMap(map);
+				var map = L.map("map_canvas");
+                L.tileLayer('https://{server}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    server:'b'
+                }).addTo(map);
+				map.setView([52.085820, 6.024548], 12);
+				/*
+                var runLayer = omnivore.kml('http://jotihunt2017.area348.nl/jotihunt2016.kml')
+                    .on('ready', function() {
+                        map.fitBounds(runLayer.getBounds());
+                    })
+                    .addTo(map);
+				*/
+				//todo zorg dat de kml toegevoegd wordt.
 				return map ;
 			} ;
 
@@ -239,11 +227,10 @@
 					    alert("sorry hunters verzenden wordt niet gesupport door je browser") ;
 					}
 					return hunterLocSender.getRunning() ;
-  					
+
   				}) ;
   				controls.addButton('Centreer Kaart', '#fff', function(div){
-  					map.setCenter(new google.maps.LatLng(52.087656, 5.892773)) ;
-  					map.setZoom(10) ;
+  					map.setView([52.087656, 5.892773],10) ;
   				}) ;
   				controls.addButton('log uit', '#fff', function(div){
   					api.logout() ;
@@ -320,7 +307,7 @@
 				initializeControls() ;
 				updateHunters() ;
 				controls.hideLogin() ;
-				google.maps.event.trigger(map, "resize");
+
 			}
 			var initialize = function initialize() {
 				initializeGlobals() ;
@@ -337,7 +324,6 @@
 				initializeControls() ;
 				updateHunters() ;
 				controller() ;
-				google.maps.event.trigger(map, "resize");
 			};
 			
 			function updateHunters(){

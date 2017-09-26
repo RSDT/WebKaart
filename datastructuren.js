@@ -178,14 +178,13 @@ class Vos {
 		this.last_hint_icon = last_hint_icon ;
 		this.markers =  [] ;
 		this.team = team ;
-		this.circle  = new google.maps.Circle({
-						  map: this.map,
+		this.circle  = L.circle([0,0],{
 						  radius: 0,    // afstand in metres
 						  strokeColor: '#FF6600',
 						  strokeOpacity: 0.2,
 						  strokeWeight: 0.2,
 						  fillColor: '#FF6600'
-					});
+					}).addTo(this.map);
 		var polylineInfo = {
 			path: [],
 			strokeColor: this.color,
@@ -194,8 +193,8 @@ class Vos {
 		}
 		this.speed = 6.0; // in km/u
 		this.last_hint = {team:'q', id: '42'} ; //fake data
-		this.polyline = new google.maps.Polyline(polylineInfo) ;
-		this.polyline.setMap(map) ;
+		this.polyline = L.polyline(polylineInfo) ;
+		this.polyline.addTo(map);
 		this.visible = true ;
 		this.groepen = [] ;
 	}
@@ -221,10 +220,10 @@ class Vos {
 	}
 
 	addGroep(groep){
-		if (groep.team != this.team){
+		if (groep.team !== this.team){
 			return;
 		}
-        var infowindowdata =
+        let infowindowdata =
         '<div id="infowindow">'+
         groep.naam +
         '<br>'+
@@ -232,31 +231,23 @@ class Vos {
         '<br>'+
         groep.adres+
         '</div>' ;
-        var infowindow = new google.maps.InfoWindow({
-            content: infowindowdata
-        });
-
-        var marker = new google.maps.Marker({
-            position: new google.maps.LatLng(groep.latitude,groep.longitude),
-            map: this.map,
+		let icon = L.icon({
+			iconUrl: this.groep_icon,
+			iconSize: [25,18]
+		});
+        let marker = L.marker([groep.latitude,groep.longitude],{
             title: groep.naam + '#'+ groep.team+ groep.id,
-            icon: new google.maps.MarkerImage(this.groep_icon, null, null, new google.maps.Point(25,18)),
-            visible: this.visible
-        });
-
-        var circle  = new google.maps.Circle({
-                      map: this.map,
+            visible: this.visible,
+			icon: icon
+        }).addTo(this.map);
+		marker.bindPopup(infowindowdata);
+        let circle  = L.circle([groep.latitude,groep.longitude],{
                       radius: 500,    // afstand in metres
                       strokeColor: "#000000",
                       strokeOpacity: 0.2,
                       strokeWeight: 0.2,
                       fillColor: this.color
                 });
-        circle.bindTo('center', marker, 'position') ;
-        google.maps.event.addListener(marker, 'click', function() {
-            infowindow.open(map,marker);
-
-        });
         this.groepen.push({marker: marker, circle: circle}) ;
 
 	}
@@ -265,7 +256,7 @@ class Vos {
 	    if (this.markers.length <=0){
 	        return;
         }
-		var marker = this.markers[0] ;
+		let marker = this.markers[0] ;
 			let title = marker.getTitle().split(';') ;
 			if (title.length == 0){
 				alert('error 01. \n de cirkels zullen niet groeien \n' + marker.getTitle())
@@ -300,10 +291,7 @@ class Vos {
 			'<br>'+
 			response.extra +
 			'</div>' ;
-		var infowindow = new google.maps.InfoWindow({
-			content: infowindowdata
-		}) ;
-		var pos =  new google.maps.LatLng(response.latitude, response.longitude) ;
+		let pos =  [response.latitude, response.longitude] ;
 		var icon ;
 		if (response.icon == "3"){ // icon is een spot
 			icon = this.spot_icon ;
@@ -312,25 +300,27 @@ class Vos {
 		} else { // icon is een hint
 			icon = this.last_hint_icon ;
 			for (var i = 0; i < this.markers.length; i++){ // er is maar een last hint.
-				if (this.markers[i].getIcon().url == this.last_hint_icon){
-					this.markers[i].setIcon(new google.maps.MarkerImage(this.hint_icon, null, null, new google.maps.Point(16, 16)))
+				if (this.markers[i]._icon.src.endsWith(this.last_hint_icon)){
+					this.markers[i].setIcon(
+						L.icon(
+							{
+								iconUrl: this.hint_icon,
+								iconSize:[16, 16]
+							}
+							));
 				}
 			}
 		}
-		var icon_image =  new google.maps.MarkerImage(icon, null, null, new google.maps.Point(16, 16)) ;
-		var marker = new google.maps.Marker({
-			position: pos,
-			map: this.map,
+		var icon_image =  L.icon({iconUrl:icon, iconSize:[16, 16]}) ;
+		var marker = L.marker(pos, {
 			title: response.team + "#"  + response.id+ ';' + response.datetime,
 			icon: icon_image,
 			visible: this.visible
 		}) ;
-		if (icon == this.last_hint_icon){
-			this.circle.bindTo('center', marker, 'position') ;	
+		marker.addTo(this.map);
+		if (icon.endsWith(this.last_hint_icon)){
+			this.circle.setLatLng(marker.getLatLng());
 		}
-		google.maps.event.addListener(marker, 'click', function() {
-						infowindow.open(map,marker);
-					});	
 
 		this.markers.push(marker) ;
 		var path = this.polyline.getPath() ;
@@ -338,6 +328,7 @@ class Vos {
 		this.updateRadius() ;
 	}
 }
+
 class Foto{
 	constructor(map, iconPath, iconPathKlaar, response){
 		this.map = map ;
@@ -355,20 +346,16 @@ class Foto{
 			response.extra+
 			'</div>'
 			;
-		var infowindow = new google.maps.InfoWindow({
-			content: InfoWindowData
-		});
-		var marker = new google.maps.Marker({
-			position: new google.maps.LatLng(response.latitude, response.longitude),	
-			map: this.map,				
+
+		var marker = L.marker([response.latitude, response.longitude],{
 			title: response.foto_nr,	
-			icon: new google.maps.MarkerImage(this.icon_te_doen,null,null,new google.maps.Point(10,10))		
-		});
+			icon: L.icon({
+					iconUrl:this.icon_te_doen,
+					iconSize:[10,10]})
+		}).addTo(this.map);
 		this.done = false;
 		this.visible = true;
-		google.maps.event.addListener(marker, 'click', function() {
-						infowindow.open(map,marker);
-					});	
+        marker.bindPopup(InfoWindowData);
 		this.marker = marker;
 	}
 	getVisible(){
@@ -382,7 +369,9 @@ class Foto{
 	}
 	setDone(){
 		this.done = true ;
-		this.marker.setIcon(new google.maps.MarkerImage(this.icon_klaar, null,null,new google.maps.Point(10,10))) ;
+		this.marker.setIcon(L.icon({
+            iconUrl:this.icon_klaar,
+            iconSize:[10,10]})	) ;
 	}
 }
 class FotoSet{
@@ -457,7 +446,7 @@ class Hunter{
 			strokeOpacity: .6,
 			strokeWeight: 2
 		}
-		this.polyline = new google.maps.Polyline(polylineInfo) ;
+		this.polyline = L.polyline(polylineInfo) ;
 		this.polyline.setMap(this.map) ;
 		this.infoWindowData = '<div id="infowindow">'+
 				naam +
@@ -468,17 +457,12 @@ class Hunter{
 				content: this.infoWindowData
 			});
 
-		this.marker = new google.maps.Marker({
-			position: new google.maps.LatLng(0,0),
-			map: this.map,
+		this.marker = L.marker([0,0],{
 			title: naam
-		}) ;
+		}).addTo(map) ;
 		this.marker.setVisible(false) ;
-		google.maps.event.addListener(this.marker, 'click', function(e) {
-				var hunter = hunters.getHunterFromLatLng(e.latLng) ;
-				hunter.infoWindow.open(map, hunter.marker);
-			});
-		this.last = {hunter: "sjlkasjdlk", id: "420"} ; // fake data
+		this.marker.bindPopup(this.infoWindowData);
+		this.last = {hunter: "fake data", id: "420"} ; // fake data
 		this.pointsExpires = [] ;
 		this.visible = true ;
 
@@ -530,7 +514,7 @@ class Hunter{
 	addLoc(response){
 		if (response.hunter != this.naam && response.id != this.last.id){
 			this.last = response ;
-			var pos =  new google.maps.LatLng(response.latitude, response.longitude) ;
+			var pos =  [response.latitude, response.longitude] ;
 			var expires = dtToUnixTS(response.datetime) + 1*60*60*1000 ;
 			this.polyline.getPath().push(pos) ;
 			this.marker.setVisible(true) ;
@@ -539,7 +523,7 @@ class Hunter{
 			if (response.icon == "999"){
 				response.icon = "0" ;
 			}
-			this.marker.setIcon(new google.maps.MarkerImage(this.iconPath.replace("{id}", response.icon), null, null, new google.maps.Point(16, 16)));
+			this.marker.setIcon(L.icon({iconUrl:this.iconPath.replace("{id}", response.icon),iconSize:[16, 16]}));
 			this.pointsExpires.push(expires) ;
 		}
 	}
@@ -631,12 +615,13 @@ class myWorker{
 	}
 
 	change_api_key(api_key){
-		var data = {cmd: 'change_api_key', api_key: api_key} ;
+		let data = {cmd: 'change_api_key', api_key: api_key} ;
 		this.api_key = api_key ;
 	}
+
 	stop(){
-		var data = {cmd: 'stop'} ;
-		if (this.worker != null){
+		let data = {cmd: 'stop'} ;
+		if (this.worker !== null){
 			clearInterval(this.worker) ;
 			this.running = false ;
 		}
@@ -656,7 +641,7 @@ class HuntersSet{
 		return this.visible ;
 	}
 	setVisible(visible){
-		if (this.visible != visible){
+		if (this.visible !== visible){
 			this.visible = visible ;
 			for (let naam of this.hunterNamen){
 				this.inUse[naam].setVisible(visible) ;
@@ -664,7 +649,7 @@ class HuntersSet{
 		}
 	}
 	notUsedAnymore(naam){
-		if (this.inUse[naam] != undefined){
+		if (this.inUse[naam] !== undefined){
 			this.notInUse.push(this.inUse[naam]) ;
 			this.inUse[naam] = undefined ;
 		}
@@ -673,7 +658,7 @@ class HuntersSet{
 	addHunter(naam){
 		if (!this.hunterNamen.has(naam)){
 			var x = this.notInUse.pop() ;
-			if (x == undefined){
+			if (x === undefined){
 				x = new Hunter(this.map, naam, this.hunter_icon_path) ;
 			}else{
 				x.setNaam(naam) ;
@@ -685,8 +670,8 @@ class HuntersSet{
 
 	getHunterFromLatLng(latlng){
 		for (let naam of this.hunterNamen){
-			var hunter = this.inUse[naam] ;
-			var hposition = hunter.marker.getPosition() ;
+			let hunter = this.inUse[naam] ;
+			let hposition = hunter.marker.getPosition() ;
 			if (hposition.lat() ==latlng.lat() && hposition.lng() ==latlng.lng()){
 				return hunter ;
 			}
@@ -701,12 +686,12 @@ class HuntersSet{
 		if (!this.hunterNamen.has(naam)){
 			this.addHunter(naam) ;
 		}
-		var hunter = this.inUse[naam] ;
+		let hunter = this.inUse[naam] ;
 		hunter.addLoc(response) ;
 	}
 	checkPaths(){
 		for (let naam of this.hunterNamen){
-			var hunter = this.inUse[naam] ;
+			let hunter = this.inUse[naam] ;
 			hunter.checkPath() ;
 		}
 	}
@@ -743,12 +728,12 @@ class ConctrolCenter{
 			controls.submenu_end = controls.submenu_start ;
 			controls.clearMenu() ;
 
-			var last_child_added = controls.childeren[controls.submenu_start] ;
+			let last_child_added = controls.childeren[controls.submenu_start] ;
 			controls.submenu_end++ ;
 			controls.submenu.appendChild(last_child_added) ;
 
 			while (controls.menu.offsetHeight < window.innerHeight && controls.submenu_start > 0){
-				var childToAdd = controls.childeren[controls.submenu_start - 1] ;
+				let childToAdd = controls.childeren[controls.submenu_start - 1] ;
 				controls.submenu.insertBefore(childToAdd, last_child_added) ;
 				controls.submenu_start--;
 				last_child_added = childToAdd ;
@@ -825,7 +810,11 @@ class ConctrolCenter{
 	}
 
 	hideLogin(){
-		this.loginDiv.hidden = true ;
+		try {
+            this.loginDiv.hidden = true;
+        }catch (err){
+			alert("login scherm kan niet weggehaald worden maar je bent wel ingelogd")
+		}
 	}
 	createButton(label, start_kleur, onclick){
 		// Set CSS for the control border.
